@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Polarization Playground</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="masthead">
+        <h1>POLARIZATION<span class="slash">/</span><span class="accent">PLAYGROUND</span></h1>
+        <span class="sub">ANAGLYPH INSTRUMENT CONSOLE · <b>EX</b> RED CHANNEL · <i>EY</i> GREEN CHANNEL</span>
+        <span class="meta">REV 0.0.1 · PHYSICSLAB · ONLINE</span>
+      </header>
+
+      <main class="stage" id="stage">
+        <section class="view view-wave" data-id="01">
+          <div class="view-head">
+            <span class="title" data-letter="A">WAVE 3D</span>
+            <span class="readout">δ · <strong id="ro-wave">—</strong></span>
+          </div>
+          <div class="view-body" id="view-wave"></div>
+        </section>
+
+        <section class="view view-poincare" data-id="02">
+          <div class="view-head">
+            <span class="title" data-letter="B">POINCARÉ SPHERE</span>
+            <span class="readout">S₁S₂S₃ · <strong id="ro-poincare">—</strong></span>
+          </div>
+          <div class="view-body" id="view-poincare"></div>
+        </section>
+
+        <section class="view view-ellipse" data-id="03">
+          <div class="view-head">
+            <span class="title" data-letter="C">ELLIPSE 2D</span>
+            <span class="readout">CHI · <strong id="ro-ellipse">—</strong></span>
+          </div>
+          <div class="view-body" id="view-ellipse"></div>
+        </section>
+
+        <section class="view view-numeric" data-id="04">
+          <div class="view-head">
+            <span class="title" data-letter="D">NUMERIC</span>
+            <span class="readout">PSI · <strong id="ro-numeric">—</strong></span>
+          </div>
+          <div class="view-body" id="view-numeric"></div>
+        </section>
+      </main>
+
+      <footer class="dock" id="controls"></footer>
+
+      <div class="colophon">
+        <span class="swatch x">CH-X · #FF2D55</span>
+        <span class="swatch y">CH-Y · #00FF9C</span>
+        <span class="swatch s">SUM · #D8DDE2</span>
+        <span class="end">DRAG · STEP · OBSERVE</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
