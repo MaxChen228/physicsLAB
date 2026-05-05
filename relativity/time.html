@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>時間膨脹 · Time Dilation</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><span class="greek">ℳ</span><a href="index.html">Minkowski Spacetime</a></div>
+  <div class="links">
+    <a href="length.html"><span class="num">01</span>長度收縮</a>
+    <a href="time.html" class="active"><span class="num">02</span>時間膨脹</a>
+    <a href="velocity.html"><span class="num">03</span>速度疊合</a>
+    <a href="twin.html"><span class="num">04</span>孿生子</a>
+  </div>
+</nav>
+
+<main class="concept-main">
+  <aside class="sidebar">
+    <h1>時間膨脹</h1>
+    <div class="subtitle">Time Dilation · Δt = γ Δτ</div>
+
+    <h2>動鐘對 S 的速度</h2>
+    <div class="field">
+      <label>β = v/c <span class="value" id="lbl-beta">0.600</span></label>
+      <input type="range" id="beta" min="0" max="0.99" step="0.001" value="0.6" />
+    </div>
+    <div class="field">
+      <label>觀察固有時刻數 N <span class="value" id="lbl-N">4</span></label>
+      <input type="range" id="N" min="1" max="6" step="1" value="4" />
+    </div>
+
+    <h2>數值</h2>
+    <div class="stats">
+      <div class="row"><span>γ</span><span id="lbl-gamma">1.250</span></div>
+      <div class="row"><span>固有時 Δτ = 1</span><span>= 1.000</span></div>
+      <div class="row highlight"><span>S 系座標時 Δt = γΔτ</span><span id="lbl-dt">1.250</span></div>
+      <div class="row"><span>不變區間 s² (每 tick)</span><span id="lbl-int">+1.00</span></div>
+    </div>
+
+    <h2>慣性系切換動畫</h2>
+    <button class="btn boost" id="btn-boost"><span class="arrow">▶</span><span>Lorentz Boost: S → S′</span></button>
+    <div class="note" style="margin-top:10px;">點擊後動畫切換到「動鐘自己的慣性系」。在 S′ 視角下動鐘世界線變成垂直的 ct′ 軸；那些 tick 事件全落在自己 ct′ 軸上每整數刻度。</div>
+
+    <h2>顯示</h2>
+    <div class="toggle-row">
+      <span class="chip on" data-toggle="primeAxes">S′ 軸</span>
+      <span class="chip on" data-toggle="hyperbolas">不變雙曲線</span>
+      <span class="chip on" data-toggle="lightcone">光錐</span>
+      <span class="chip" data-toggle="reciprocal">互逆觀察 (S 中靜止鐘)</span>
+    </div>
+
+    <h2>幾何起源</h2>
+    <div class="note">
+      固有時 dτ² = dt² − dx²/c² 是世界線的「弧長」。鐘在 S′ 中靜止，世界線即 ct′ 軸；它走 N 個固有時 對應 S 座標 (γβN, γN)。<br><br>
+      鐘的 N 個 tick 在 S 觀察者眼中需要 γN 個 ct，多花了 (γ−1)N。注意每個 tick 事件都落在 <strong>同一條雙曲線 ct² − x² = N²</strong> —— 不變區間在所有慣性系一致。
+      <span class="formula">Δt = γ Δτ &nbsp;&nbsp; (γ &gt; 1)</span>
+    </div>
+
+    <h2>互逆性</h2>
+    <div class="note" style="border-left-color: var(--S);">
+      開啟「互逆觀察」會多畫一條 S 中靜止鐘的世界線（ct 軸）。S′ 觀察者用 <code>ct′ = const</code> 切片去量這個鐘，同樣會得到 γ 倍延遲—— 這不是矛盾，是因為「同時」在兩個慣性系是不同概念。
+    </div>
+  </aside>
+
+  <div class="diagram-area">
+    <canvas id="diagram"></canvas>
+    <div class="formula-band">Δt = γ Δτ <span class="num" id="band-num">= 1.250 Δτ</span></div>
+    <div class="frame-badge"><span class="label">視角</span> · <span id="badge-frame">S 系</span> · viewβ = <span class="beta" id="badge-vb">0.000</span></div>
+    <div class="legend">
+      <div class="item"><div class="swatch" style="background:#6cf"></div>S 系座標 (x, ct)</div>
+      <div class="item"><div class="swatch" style="background:#f6a"></div>動鐘世界線 = ct′ 軸</div>
+      <div class="item"><div class="swatch dot" style="background:#f6a"></div>固有時 tick 事件</div>
+      <div class="item"><div class="swatch" style="background:#5e7"></div>不變雙曲線 ct² − x² = N²</div>
+    </div>
+    <div class="hint">每個 τ=N 的事件正好落在第 N 條雙曲線上 — 雙曲線是「等固有時」的軌跡。</div>
+  </div>
+</main>
+
+<script src="minkowski.js"></script>
+<script>
+"use strict";
+
+const state = {
+  beta: 0.6, N: 4,
+  toggles: { primeAxes: true, hyperbolas: true, lightcone: true, reciprocal: false },
+};
+
+const canvas = document.getElementById("diagram");
+const mk = new MinkowskiCanvas(canvas, { zoom: 65, originX: 1.5, originCT: 1.5 });
+mk.onResize = render;
+
+function render() {
+  const { beta, N } = state;
+  const g = gammaOf(beta);
+  mk.clear();
+  mk.grid();
+
+  if (state.toggles.lightcone) mk.lightCone([0, 0]);
+  if (state.toggles.hyperbolas) {
+    const ks = [];
+    for (let n = 1; n <= N; n++) ks.push(n);
+    mk.hyperbolas(ks);
+  }
+
+  mk.sAxes({ tickRange: 6 });
+  if (state.toggles.primeAxes) mk.primeAxes(beta, { tickRange: 6 });
+
+  // 動鐘世界線（粉紅 ct′ 軸方向）
+  mk.worldline([0, 0], beta, { color: "#f6a", lineWidth: 2.5 });
+
+  // 固有時 tick 事件 + 投影到 ct 軸
+  for (let n = 1; n <= N; n++) {
+    const sx = g * beta * n, sct = g * n;
+    // 水平虛線投影
+    mk.segment([sx, sct], [0, sct], "rgba(102,204,255,0.7)", { lineWidth: 1, dash: [3, 3] });
+    // ct 軸刻度標籤
+    mk.text(0, sct, (g * n).toFixed(2), {
+      color: "#6cf", font: "10px 'SF Mono', Menlo, monospace", dx: -8, dy: 4, align: "right",
+    });
+    // 事件圓點
+    mk.event(sx, sct, { color: "#f6a", radius: 4.5, stroke: "#000" });
+    mk.text(sx, sct, `τ=${n}`, { color: "#f6a", font: "11px 'SF Mono', Menlo, monospace", dx: 9, dy: 4 });
+  }
+
+  // 互逆觀察：S 中靜止鐘 (ct 軸) + S′ 同時切片
+  if (state.toggles.reciprocal) {
+    mk.worldline([0, 0], 0, { color: "#9af", lineWidth: 2, dash: [4, 4] });
+    // 在 S′ 中量 S 鐘：S 鐘事件 (0, n) 在 S′ 中座標 lorentz(0, n, beta) = (-γβn, γn)
+    for (let n = 1; n <= N; n++) {
+      // S′ 同時切片 ct′ = γn 經過 (0, n)：在 S 中是 ct = β·x + n/γ
+      // 切片從 S 鐘事件 (0, n) 到動鐘世界線交點
+      const ctp = g * n;
+      // 切片在 S 中：ct - β x = n/γ → 兩端取 x ∈ [-3, 3]
+      mk.segment([-3, n / g - beta * 3], [3, n / g + beta * 3], "rgba(255,102,170,0.4)", {
+        lineWidth: 1, dash: [2, 3],
+      });
+      mk.event(0, n, { color: "#9af", radius: 3.5, stroke: null });
+    }
+  }
+
+  // 標籤更新
+  document.getElementById("lbl-beta").textContent = beta.toFixed(3);
+  document.getElementById("lbl-N").textContent = N.toString();
+  document.getElementById("lbl-gamma").textContent = g.toFixed(3);
+  document.getElementById("lbl-dt").textContent = g.toFixed(3);
+  document.getElementById("lbl-int").textContent = "+1.00";
+  document.getElementById("band-num").textContent = `= ${g.toFixed(3)} Δτ`;
+}
+
+const animator = new BoostAnimator(mk, render);
+function renderWithBadge() {
+  render();
+  const vb = mk.viewBeta;
+  document.getElementById("badge-vb").textContent = vb.toFixed(3);
+  document.getElementById("badge-frame").textContent =
+    Math.abs(vb) < 1e-3 ? "S 系" : (Math.abs(vb - state.beta) < 1e-3 ? "S′ 系" : "過渡中");
+}
+animator.render = renderWithBadge;
+
+document.getElementById("beta").addEventListener("input", e => {
+  state.beta = parseFloat(e.target.value);
+  if (animator.atTarget) mk.viewBeta = state.beta;
+  renderWithBadge();
+});
+document.getElementById("N").addEventListener("input", e => {
+  state.N = parseInt(e.target.value); renderWithBadge();
+});
+document.querySelectorAll(".chip[data-toggle]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const k = chip.dataset.toggle;
+    state.toggles[k] = !state.toggles[k];
+    chip.classList.toggle("on", state.toggles[k]);
+    renderWithBadge();
+  });
+});
+
+const btn = document.getElementById("btn-boost");
+btn.addEventListener("click", () => {
+  const at = animator.toggle(state.beta);
+  btn.classList.toggle("active", at);
+  btn.querySelector("span:last-child").textContent =
+    at ? "Lorentz Boost: S′ → S (返回)" : "Lorentz Boost: S → S′";
+  btn.querySelector(".arrow").textContent = at ? "◀" : "▶";
+});
+
+renderWithBadge();
+</script>
+</body>
+</html>

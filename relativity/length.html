@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>長度收縮 · Length Contraction</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><span class="greek">ℳ</span><a href="index.html">Minkowski Spacetime</a></div>
+  <div class="links">
+    <a href="length.html" class="active"><span class="num">01</span>長度收縮</a>
+    <a href="time.html"><span class="num">02</span>時間膨脹</a>
+    <a href="velocity.html"><span class="num">03</span>速度疊合</a>
+    <a href="twin.html"><span class="num">04</span>孿生子</a>
+  </div>
+</nav>
+
+<main class="concept-main">
+  <aside class="sidebar">
+    <h1>長度收縮</h1>
+    <div class="subtitle">Length Contraction · L = L₀ / γ</div>
+
+    <h2>S′ 對 S 的速度</h2>
+    <div class="field">
+      <label>β = v/c <span class="value" id="lbl-beta">0.600</span></label>
+      <input type="range" id="beta" min="0" max="0.99" step="0.001" value="0.6" />
+    </div>
+    <div class="field">
+      <label>固有長 L₀ <span class="value" id="lbl-L0">1.50</span></label>
+      <input type="range" id="L0" min="0.5" max="3" step="0.05" value="1.5" />
+    </div>
+
+    <h2>數值</h2>
+    <div class="stats">
+      <div class="row"><span>γ</span><span id="lbl-gamma">1.250</span></div>
+      <div class="row"><span>固有長 L₀</span><span id="lbl-L0v">1.500</span></div>
+      <div class="row highlight"><span>S 系觀測長 L</span><span id="lbl-L">1.200</span></div>
+      <div class="row"><span>收縮比 L/L₀</span><span id="lbl-ratio">0.800</span></div>
+    </div>
+
+    <h2>慣性系切換動畫</h2>
+    <button class="btn boost" id="btn-boost"><span class="arrow">▶</span><span>Lorentz Boost: S → S′</span></button>
+    <div class="note" style="margin-top:10px;">沿雙曲角 φ = atanh β 等速插值。動畫結束時 S′ 軸變垂直/水平，整張時空圖變成 S′ 觀察者的視野—這就是 Lorentz 變換的幾何本質。</div>
+
+    <h2>顯示</h2>
+    <div class="toggle-row">
+      <span class="chip on" data-toggle="primeAxes">S′ 軸</span>
+      <span class="chip on" data-toggle="hyperbolas">不變雙曲線</span>
+      <span class="chip on" data-toggle="lightcone">光錐</span>
+      <span class="chip" data-toggle="extraSlices">多時刻同時切片</span>
+    </div>
+
+    <h2>幾何起源</h2>
+    <div class="note">
+      桿在 S′ 中靜止，兩端點 <code>x′ = 0</code>、<code>x′ = L₀</code> 對應兩條 <strong>平行於 ct′ 的世界線</strong>。<br><br>
+      長度的定義是「兩端點 <strong>同時</strong> 量到的位置差」。S′ 用 <code>ct′ = const</code> 切片得固有長 L₀；S 用 <code>ct = const</code> 切片，因切片角度不同，量到的兩線距離較短。
+      <span class="formula">L = L₀ √(1 − β²) = L₀ / γ</span>
+    </div>
+  </aside>
+
+  <div class="diagram-area">
+    <canvas id="diagram"></canvas>
+    <div class="formula-band">L = L₀ / γ <span class="num" id="band-num">= 1.200</span></div>
+    <div class="frame-badge"><span class="label">視角</span> · <span id="badge-frame">S 系</span> · viewβ = <span class="beta" id="badge-vb">0.000</span></div>
+    <div class="legend">
+      <div class="item"><div class="swatch" style="background:#6cf"></div>S 系座標 (x, ct)</div>
+      <div class="item"><div class="swatch" style="background:#f6a"></div>S′ 系（桿靜止）</div>
+      <div class="item"><div class="swatch" style="background:#f6a; height:5px;"></div>固有長 L₀（S′ 同時切片）</div>
+      <div class="item"><div class="swatch" style="background:#6cf; height:5px;"></div>觀測長 L（S 同時切片）</div>
+      <div class="item"><div class="swatch" style="background:#5e7"></div>不變雙曲線</div>
+    </div>
+    <div class="hint">兩條粉線是桿端點的世界線。藍/粉粗線分別是 S 與 S′ 慣性系的同時切片，量到不同長度。</div>
+  </div>
+</main>
+
+<script src="minkowski.js"></script>
+<script>
+"use strict";
+
+const state = {
+  beta: 0.6, L0: 1.5,
+  toggles: { primeAxes: true, hyperbolas: true, lightcone: true, extraSlices: false },
+};
+
+const canvas = document.getElementById("diagram");
+const mk = new MinkowskiCanvas(canvas, { zoom: 70, originX: 1.0, originCT: 0.6 });
+mk.onResize = render;
+
+function render() {
+  const { beta, L0 } = state;
+  const g = gammaOf(beta);
+
+  mk.clear();
+  mk.grid();
+
+  if (state.toggles.lightcone) mk.lightCone([0, 0]);
+  if (state.toggles.hyperbolas) mk.hyperbolas([1, 2, 3]);
+
+  // S 軸
+  mk.sAxes({ tickRange: 6 });
+
+  // S′ 軸
+  if (state.toggles.primeAxes) mk.primeAxes(beta, { tickRange: 6 });
+
+  // 兩條桿端點世界線（皆與 ct′ 平行）
+  // 左端：x′ = 0 → 過原點，方向 (β, 1)
+  // 右端：x′ = L0 → 過 (γL0, γβL0)，方向 (β, 1)
+  mk.worldline([0, 0], beta, { color: "#f6a", lineWidth: 2.5 });
+  mk.worldline([L0 / g, 0], beta, { color: "#f6a", lineWidth: 2.5 });
+
+  // S′ 同時切片 (ct′=0)：(0,0) → (γL0, γβL0)，固有長 = L0
+  mk.segment([0, 0], [g * L0, g * beta * L0], "#f6a", { lineWidth: 6, cap: "round" });
+  mk.event(0, 0, { color: "#f6a", radius: 5 });
+  mk.event(g * L0, g * beta * L0, { color: "#f6a", radius: 5 });
+  mk.text(g * L0 * 0.5, g * beta * L0 * 0.5, `L₀ = ${L0.toFixed(2)}`, {
+    color: "#f6a", font: "12px 'SF Mono', Menlo, monospace", dx: 8, dy: -10,
+  });
+
+  // S 同時切片 (ct=0)：(0,0) → (L0/γ, 0)，觀測長 = L0/γ
+  const L = L0 / g;
+  mk.segment([0, 0], [L, 0], "#6cf", { lineWidth: 6, cap: "round" });
+  mk.event(L, 0, { color: "#6cf", radius: 5 });
+  mk.text(L / 2, 0, `L = ${L.toFixed(3)}`, {
+    color: "#6cf", font: "12px 'SF Mono', Menlo, monospace", dx: 0, dy: 18, align: "center",
+  });
+
+  // 多時刻切片（可選）：在 ct = -1, 1, 2 各畫一段藍色切片
+  if (state.toggles.extraSlices) {
+    for (const ct of [-1, 1, 2]) {
+      // 桿在 S 系於 ct 時刻的位置：左端 x = β·ct，右端 x = L0/γ + β·ct
+      const xL = beta * ct;
+      const xR = L / 1 + beta * ct; // = 1/γ·L0 + β·ct
+      mk.segment([xL, ct], [xR, ct], "rgba(102,204,255,0.65)", { lineWidth: 3.5, cap: "round" });
+    }
+  }
+
+  // 文字標籤
+  document.getElementById("lbl-beta").textContent = beta.toFixed(3);
+  document.getElementById("lbl-L0").textContent = L0.toFixed(2);
+  document.getElementById("lbl-L0v").textContent = L0.toFixed(3);
+  document.getElementById("lbl-gamma").textContent = g.toFixed(3);
+  document.getElementById("lbl-L").textContent = L.toFixed(3);
+  document.getElementById("lbl-ratio").textContent = (1 / g).toFixed(3);
+  document.getElementById("band-num").textContent = `= ${L.toFixed(3)}`;
+}
+
+const animator = new BoostAnimator(mk, render);
+
+const origRender = render;
+function renderWithBadge() {
+  origRender();
+  const vb = mk.viewBeta;
+  document.getElementById("badge-vb").textContent = vb.toFixed(3);
+  document.getElementById("badge-frame").textContent =
+    Math.abs(vb) < 1e-3 ? "S 系" : (Math.abs(vb - state.beta) < 1e-3 ? "S′ 系" : "過渡中");
+}
+animator.render = renderWithBadge;
+
+document.getElementById("beta").addEventListener("input", e => {
+  state.beta = parseFloat(e.target.value);
+  if (animator.atTarget) mk.viewBeta = state.beta;
+  renderWithBadge();
+});
+document.getElementById("L0").addEventListener("input", e => {
+  state.L0 = parseFloat(e.target.value); renderWithBadge();
+});
+document.querySelectorAll(".chip[data-toggle]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const key = chip.dataset.toggle;
+    state.toggles[key] = !state.toggles[key];
+    chip.classList.toggle("on", state.toggles[key]);
+    renderWithBadge();
+  });
+});
+
+const btn = document.getElementById("btn-boost");
+btn.addEventListener("click", () => {
+  const at = animator.toggle(state.beta);
+  btn.classList.toggle("active", at);
+  btn.querySelector("span:last-child").textContent =
+    at ? "Lorentz Boost: S′ → S (返回)" : "Lorentz Boost: S → S′";
+  btn.querySelector(".arrow").textContent = at ? "◀" : "▶";
+});
+
+renderWithBadge();
+</script>
+</body>
+</html>

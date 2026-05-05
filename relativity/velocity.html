@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>速度疊合 · Velocity Addition</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><span class="greek">ℳ</span><a href="index.html">Minkowski Spacetime</a></div>
+  <div class="links">
+    <a href="length.html"><span class="num">01</span>長度收縮</a>
+    <a href="time.html"><span class="num">02</span>時間膨脹</a>
+    <a href="velocity.html" class="active"><span class="num">03</span>速度疊合</a>
+    <a href="twin.html"><span class="num">04</span>孿生子</a>
+  </div>
+</nav>
+
+<main class="concept-main">
+  <aside class="sidebar">
+    <h1>速度疊合</h1>
+    <div class="subtitle">Velocity Addition · 用幾何構造找出球的世界線</div>
+
+    <h2>列車 S′ 對地面 S 速度</h2>
+    <div class="field">
+      <label>u/c <span class="value" id="lbl-u">0.700</span></label>
+      <input type="range" id="u" min="-0.97" max="0.97" step="0.001" value="0.7" />
+    </div>
+
+    <h2>球 S″ 對列車 S′ 速度</h2>
+    <div class="field">
+      <label>v/c <span class="value" id="lbl-v">0.700</span></label>
+      <input type="range" id="v" min="-0.97" max="0.97" step="0.001" value="0.7" />
+    </div>
+
+    <h2>關鍵事件座標</h2>
+    <div class="stats">
+      <div class="row"><span>T = (γu, γ)</span><span id="lbl-T">(0.98, 1.40)</span></div>
+      <div class="row"><span>B = (γ(u+v), γ(1+uv))</span><span id="lbl-B">(1.96, 2.09)</span></div>
+      <div class="row highlight"><span>OB 斜率 = 1/w</span><span id="lbl-slope">1.064</span></div>
+    </div>
+
+    <h2>數值對照</h2>
+    <div class="stats">
+      <div class="row"><span>古典 u + v</span><span id="lbl-classic">1.400</span></div>
+      <div class="row highlight"><span>相對論 w</span><span id="lbl-w">0.940</span></div>
+      <div class="row"><span>|w| &lt; 1</span><span id="lbl-causal">是</span></div>
+    </div>
+
+    <h2>雙曲角觀點 (rapidity)</h2>
+    <div class="stats">
+      <div class="row"><span>φ_u = atanh u</span><span id="lbl-phiu">0.867</span></div>
+      <div class="row"><span>φ_v = atanh v</span><span id="lbl-phiv">0.867</span></div>
+      <div class="row highlight"><span>φ_u + φ_v = atanh w</span><span id="lbl-phisum">1.735</span></div>
+    </div>
+    <div class="note" style="margin-top:8px; border-left-color: var(--inv);">
+      不變雙曲線 ct²−x²=1 上「ct → ct′ → ct″」三點的弧長就是各自 rapidity。Boost 群把弧長相加 → 速度疊合 = 雙曲角相加。
+    </div>
+
+    <h2>慣性系切換動畫</h2>
+    <button class="btn boost" id="btn-boost"><span class="arrow">▶</span><span>Boost 到列車 S′ (β=u)</span></button>
+    <div class="note" style="margin-top:10px;">在列車 S′ 視角下：T 變成 (0, 1)、x′ 軸變水平。從 T 沿水平走 v 距離就到 B —— 在這個視角，疊合公式 (u+v)/(1+uv) 退化成 v / 1 = v（在 S′ 量到的就是 v）。</div>
+
+    <h2>顯示</h2>
+    <div class="toggle-row">
+      <span class="chip on" data-toggle="construction">構造線 T→B</span>
+      <span class="chip on" data-toggle="hyperbola">不變雙曲線 + 弧</span>
+      <span class="chip on" data-toggle="classical">古典 (u+v, 1)</span>
+      <span class="chip on" data-toggle="lightcone">光錐</span>
+    </div>
+  </aside>
+
+  <div class="diagram-area">
+    <canvas id="diagram"></canvas>
+
+    <div class="formula-band">w = (u+v)/(1+uv) <span class="num" id="band-num">= 0.940</span></div>
+    <div class="frame-badge"><span class="label">視角</span> · <span id="badge-frame">S 系</span> · viewβ = <span class="beta" id="badge-vb">0.000</span></div>
+
+    <div class="construction-key">
+      <div class="head">幾何構造</div>
+      <div class="step"><span class="marker" style="color:#fff;">O</span><span class="desc">原點：球從列車離手</span></div>
+      <div class="step"><span class="marker" style="color:#f6a;">T</span><span class="desc">列車 <code>τ′=1</code>，在 S 中為 <code>(γu, γ)</code></span></div>
+      <div class="step"><span class="marker" style="color:#9c8;">B</span><span class="desc">由 T 沿 x′ 方向走 v 距離 → <code>(γ(u+v), γ(1+uv))</code></span></div>
+      <div class="step"><span class="marker" style="color:#9c8;">→</span><span class="desc">球的世界線 <strong>= O→B</strong>，斜率 = 1/w</span></div>
+    </div>
+
+    <div class="legend">
+      <div class="item"><div class="swatch" style="background:#6cf"></div>S 系（地面）</div>
+      <div class="item"><div class="swatch" style="background:#f6a"></div>列車 ct′ 軸 / T→B 段</div>
+      <div class="item"><div class="swatch" style="background:#9c8"></div>球的世界線 O→B</div>
+      <div class="item"><div class="swatch" style="background:#ffd24a"></div>古典 (u+v, 1)</div>
+      <div class="item"><div class="swatch" style="background:#5e7"></div>不變雙曲線 ct²−x²=1</div>
+    </div>
+
+    <div class="hint">分母 (1+uv) 的幾何來源：T 不在 ct=1 而在 ct=γ — 列車的「1 秒」對地面是 γ 秒。</div>
+  </div>
+</main>
+
+<script src="minkowski.js"></script>
+<script>
+"use strict";
+
+const state = {
+  u: 0.7, v: 0.7,
+  toggles: { construction: true, hyperbola: true, classical: true, lightcone: true },
+};
+
+const canvas = document.getElementById("diagram");
+const mk = new MinkowskiCanvas(canvas, { zoom: 90, originX: 1, originCT: 1.5 });
+mk.onResize = render;
+
+function render() {
+  const { u, v } = state;
+  const w = velocityAdd(u, v);
+  const wClassic = u + v;
+  const gU = gammaOf(u);
+  const causal = Math.abs(w) < 1;
+  const gW = causal ? gammaOf(w) : null;
+
+  const O = [0, 0];
+  const T = [gU * u, gU];
+  const B = [gU * (u + v), gU * (1 + u * v)];
+  const Cl = [u + v, 1];
+
+  // ---- 自動縮放：讓 O/T/B/古典點 都在視野內。考慮 viewBeta（boost 視角）以正確包圍 ----
+  const fitPts = [O, T, B];
+  if (Math.abs(wClassic) <= 2.5) fitPts.push(Cl);
+  if (causal && gW < 3.5) fitPts.push([gW * w, gW]);
+  fitPts.push([-1.0, -0.5]);
+  const boostPt = (p) => {
+    const vb = mk.viewBeta;
+    if (Math.abs(vb) < 1e-7) return p;
+    const g = gammaOf(vb);
+    return [g * (p[0] - vb * p[1]), g * (p[1] - vb * p[0])];
+  };
+  const fb = fitPts.map(boostPt);
+  const xs = fb.map(p => p[0]);
+  const cts = fb.map(p => p[1]);
+
+  const xMin = Math.min(...xs) - 0.6;
+  const xMax = Math.max(...xs) + 0.9;
+  const ctMin = Math.min(...cts) - 0.4;
+  const ctMax = Math.max(...cts) + 0.6;
+  const targetW = xMax - xMin, targetH = ctMax - ctMin;
+  const zoomFit = Math.min(mk.W / targetW, mk.H / targetH) * 0.95;
+  // setZoom + setOrigin 會 resize 並清空畫布
+  mk.zoom = zoomFit;
+  mk.originX = (xMin + xMax) / 2;
+  mk.originCT = (ctMin + ctMax) / 2;
+  mk._resize();
+
+  // ---- 開始繪製 ----
+  mk.grid();
+  if (state.toggles.lightcone) mk.lightCone(O, "#ffd24a", { dash: [5, 4] });
+
+  mk.sAxes({ tickRange: 6 });
+
+  // 列車 ct′ 軸（粉，淡色延伸）
+  mk.worldline([0, 0], u, { color: "rgba(255,102,170,0.4)", lineWidth: 1.5 });
+
+  // 不變雙曲線 + 弧
+  if (state.toggles.hyperbola) {
+    mk.ctx.strokeStyle = "rgba(85,238,119,0.5)"; mk.ctx.lineWidth = 1.3;
+    mk._curve(x => Math.sqrt(x * x + 1), -4, 4);
+    const phi_u = Math.atanh(u);
+    const phi_w = causal ? Math.atanh(w) : null;
+    drawHyperArc(0, phi_u, "#f6a", 4);
+    if (phi_w !== null) drawHyperArc(phi_u, phi_w, "#9c8", 4);
+  }
+
+  // 古典預測
+  if (state.toggles.classical) {
+    if (Math.abs(wClassic) < 1) {
+      mk.worldline([0, 0], wClassic, { color: "rgba(255,210,74,0.3)", lineWidth: 1, dash: [4, 4] });
+    }
+    mk.segment(O, Cl, "rgba(255,210,74,0.7)", { lineWidth: 1.5, dash: [5, 4] });
+    mk.event(Cl[0], Cl[1], { color: "#ffd24a", radius: 5, stroke: "#000" });
+    mk.text(Cl[0], Cl[1], "C", {
+      color: "#ffd24a", font: "italic 14px Georgia, serif", dx: 10, dy: 4,
+    });
+  }
+
+  // 構造段 T → B（粉紅粗線，列車中量度為 v）
+  if (state.toggles.construction) {
+    mk.segment(T, B, "#f6a", { lineWidth: 5, cap: "round" });
+  }
+
+  // 球世界線：穿過 O, B（綠粗線 + 延伸線）
+  if (causal) {
+    mk.worldline([0, 0], w, { color: "rgba(153,204,136,0.35)", lineWidth: 1 });
+    mk.segment(O, B, "#9c8", { lineWidth: 4, cap: "round" });
+  } else {
+    mk.text(0, ctMax * 0.7, "w 超光速 — 不可能", {
+      color: "#f66", font: "12px sans-serif", align: "center",
+    });
+  }
+
+  // 雙曲線上的三個 unit-proper-time 點（小綠點，無標籤）
+  if (state.toggles.hyperbola && causal) {
+    mk.event(0, 1, { color: "#5e7", radius: 3.5, stroke: null });
+    mk.event(gW * w, gW, { color: "#5e7", radius: 3.5, stroke: null });
+  }
+
+  // 主要事件 — 只標短字母 O / T / B
+  drawLabeledEvent(O, "O", "#fff", [-14, 6]);
+  drawLabeledEvent(T, "T", "#f6a", [-15, -10]);
+  drawLabeledEvent(B, "B", "#9c8", [12, -8]);
+
+  // 側邊欄
+  document.getElementById("lbl-u").textContent = u.toFixed(3);
+  document.getElementById("lbl-v").textContent = v.toFixed(3);
+  document.getElementById("lbl-T").textContent = `(${T[0].toFixed(2)}, ${T[1].toFixed(2)})`;
+  document.getElementById("lbl-B").textContent = `(${B[0].toFixed(2)}, ${B[1].toFixed(2)})`;
+  document.getElementById("lbl-slope").textContent = causal ? (B[1] / B[0]).toFixed(3) : "—";
+  document.getElementById("lbl-classic").textContent = wClassic.toFixed(3);
+  document.getElementById("lbl-w").textContent = causal ? w.toFixed(3) : "—";
+  document.getElementById("lbl-causal").textContent = causal ? "是" : "否";
+  const phi_u = Math.atanh(u);
+  const phi_v = Math.atanh(v);
+  document.getElementById("lbl-phiu").textContent = phi_u.toFixed(3);
+  document.getElementById("lbl-phiv").textContent = phi_v.toFixed(3);
+  document.getElementById("lbl-phisum").textContent = (phi_u + phi_v).toFixed(3);
+  document.getElementById("band-num").textContent = causal ? `= ${w.toFixed(3)}` : "⚠";
+}
+
+function drawLabeledEvent(p, letter, color, offset) {
+  // 帶白邊的事件圓點 + 大字母
+  const ctx = mk.ctx;
+  const [px, py] = mk.P(p[0], p[1]);
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.stroke();
+  // 字母（為了清晰，畫在小白底上）
+  ctx.font = "bold italic 16px Georgia, serif";
+  const tx = px + offset[0], ty = py + offset[1];
+  const w = ctx.measureText(letter).width + 6, h = 18;
+  ctx.fillStyle = "rgba(10,14,23,0.85)";
+  ctx.fillRect(tx - 3, ty - 14, w, h);
+  ctx.fillStyle = color;
+  ctx.fillText(letter, tx, ty);
+}
+
+function drawHyperArc(phi1, phi2, color, lineWidth = 3) {
+  const ctx = mk.ctx;
+  ctx.strokeStyle = color; ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  const N = 60;
+  const a = Math.min(phi1, phi2), b = Math.max(phi1, phi2);
+  for (let i = 0; i <= N; i++) {
+    const phi = a + (b - a) * i / N;
+    const [px, py] = mk.P(Math.sinh(phi), Math.cosh(phi));
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+}
+
+const animator = new BoostAnimator(mk, render);
+function renderWithBadge() {
+  render();
+  const vb = mk.viewBeta;
+  document.getElementById("badge-vb").textContent = vb.toFixed(3);
+  document.getElementById("badge-frame").textContent =
+    Math.abs(vb) < 1e-3 ? "S (地面)" : (Math.abs(vb - state.u) < 1e-3 ? "S′ (列車)" : "過渡中");
+}
+animator.render = renderWithBadge;
+
+document.getElementById("u").addEventListener("input", e => {
+  state.u = parseFloat(e.target.value);
+  if (animator.atTarget) mk.viewBeta = state.u;
+  renderWithBadge();
+});
+document.getElementById("v").addEventListener("input", e => {
+  state.v = parseFloat(e.target.value); renderWithBadge();
+});
+document.querySelectorAll(".chip[data-toggle]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const k = chip.dataset.toggle;
+    state.toggles[k] = !state.toggles[k];
+    chip.classList.toggle("on", state.toggles[k]);
+    renderWithBadge();
+  });
+});
+
+const btn = document.getElementById("btn-boost");
+btn.addEventListener("click", () => {
+  const at = animator.toggle(state.u);
+  btn.classList.toggle("active", at);
+  btn.querySelector("span:last-child").textContent =
+    at ? "返回 S (地面)" : "Boost 到列車 S′ (β=u)";
+  btn.querySelector(".arrow").textContent = at ? "◀" : "▶";
+});
+
+renderWithBadge();
+</script>
+</body>
+</html>

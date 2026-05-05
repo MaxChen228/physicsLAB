@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>孿生子悖論 · Twin Paradox</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><span class="greek">ℳ</span><a href="index.html">Minkowski Spacetime</a></div>
+  <div class="links">
+    <a href="length.html"><span class="num">01</span>長度收縮</a>
+    <a href="time.html"><span class="num">02</span>時間膨脹</a>
+    <a href="velocity.html"><span class="num">03</span>速度疊合</a>
+    <a href="twin.html" class="active"><span class="num">04</span>孿生子</a>
+  </div>
+</nav>
+
+<main class="concept-main">
+  <aside class="sidebar">
+    <h1>孿生子悖論</h1>
+    <div class="subtitle">Twin Paradox · 兩條世界線 · 一個轉折</div>
+
+    <h2>B 的航行速度</h2>
+    <div class="field">
+      <label>β = v/c <span class="value" id="lbl-beta">0.700</span></label>
+      <input type="range" id="beta" min="0.1" max="0.97" step="0.001" value="0.7" />
+    </div>
+    <div class="field">
+      <label>B 的單程固有時 τ_half <span class="value" id="lbl-thalf">3.0</span></label>
+      <input type="range" id="thalf" min="1" max="5" step="0.1" value="3" />
+    </div>
+
+    <h2>結果</h2>
+    <div class="stats">
+      <div class="row"><span>γ</span><span id="lbl-gamma">1.400</span></div>
+      <div class="row"><span>A 經歷固有時 τ_A</span><span id="lbl-tA">8.404</span></div>
+      <div class="row highlight"><span>B 經歷固有時 τ_B</span><span id="lbl-tB">6.000</span></div>
+      <div class="row"><span>差距 τ_A − τ_B</span><span id="lbl-diff">2.404</span></div>
+      <div class="row"><span>比值 τ_B / τ_A</span><span id="lbl-ratio">0.714</span></div>
+    </div>
+
+    <h2>慣性系切換動畫</h2>
+    <button class="btn boost" id="btn-boost"><span class="arrow">▶</span><span>Boost 到 B 出航慣性系</span></button>
+    <div class="note" style="margin-top:10px;">在 B 出航慣性系視角，B 的出航段變成垂直 ct′ 軸；A 反而看起來在動。看清折返事件 K 之後 B 切換到另一個慣性系——這就是「悖論」消失的關鍵：B 不是單一慣性觀察者。</div>
+
+    <h2>顯示</h2>
+    <div class="toggle-row">
+      <span class="chip on" data-toggle="ticks">tick 事件</span>
+      <span class="chip on" data-toggle="simultaneity">B 的同時面（折返跳變）</span>
+      <span class="chip" data-toggle="lightcone">光錐</span>
+      <span class="chip" data-toggle="hyperbolas">不變雙曲線</span>
+    </div>
+
+    <h2>幾何起源</h2>
+    <div class="note">
+      固有時 = 世界線「弧長」<code>∫√(dt² − dx²/c²)</code>。在閔氏度規下「直線最長」（與歐氏相反）：
+      <span class="formula">τ_A &gt; τ_B 因為 A 走直線、B 折返。</span>
+      所謂悖論的解：B 在折返事件前後採用兩個不同慣性系，他的「同時面」在 A 的世界線上 <strong>跳過</strong> 了一段
+      <code>2τ_half · β²γ</code>。那段就是 B 看到的「A 老得比較快」。
+    </div>
+
+    <h2>對應事件</h2>
+    <div class="stats">
+      <div class="row"><span>O 分手</span><span>(0, 0)</span></div>
+      <div class="row"><span>K 折返</span><span id="lbl-K">(2.94, 4.20)</span></div>
+      <div class="row"><span>R 重逢</span><span id="lbl-R">(0, 8.40)</span></div>
+      <div class="row"><span>B 同時面 跳變幅度</span><span id="lbl-jump">5.88</span></div>
+    </div>
+  </aside>
+
+  <div class="diagram-area">
+    <canvas id="diagram"></canvas>
+    <div class="formula-band">τ_B / τ_A = 1/γ <span class="num" id="band-num">= 0.714</span></div>
+    <div class="frame-badge"><span class="label">視角</span> · <span id="badge-frame">S 系 (A)</span> · viewβ = <span class="beta" id="badge-vb">0.000</span></div>
+    <div class="legend">
+      <div class="item"><div class="swatch" style="background:#6cf"></div>A — 留守（直線世界線）</div>
+      <div class="item"><div class="swatch" style="background:#f6a"></div>B — 出航折返（折線世界線）</div>
+      <div class="item"><div class="swatch dot" style="background:#6cf"></div>A 的 tick（每固有秒）</div>
+      <div class="item"><div class="swatch dot" style="background:#f6a"></div>B 的 tick（每固有秒）</div>
+      <div class="item"><div class="swatch" style="background:#ffd24a"></div>B 同時面（折返跳變）</div>
+    </div>
+    <div class="hint">B 在 K 點折返；他在 K 之前的同時面與之後的同時面之間，跳過了 A 一大段時間。</div>
+  </div>
+</main>
+
+<script src="minkowski.js"></script>
+<script>
+"use strict";
+
+const state = {
+  beta: 0.7, thalf: 3.0,
+  toggles: { ticks: true, simultaneity: true, lightcone: false, hyperbolas: false },
+};
+
+const canvas = document.getElementById("diagram");
+const mk = new MinkowskiCanvas(canvas, { zoom: 55, originX: 1.5, originCT: 4 });
+mk.onResize = render;
+
+function render() {
+  const { beta, thalf } = state;
+  const g = gammaOf(beta);
+  // 關鍵事件
+  const O = [0, 0];
+  const K = [g * beta * thalf, g * thalf];          // 折返事件
+  const R = [0, 2 * g * thalf];                     // 重逢
+  const tA = 2 * g * thalf;                         // A 經歷固有時
+  const tB = 2 * thalf;                             // B 經歷固有時
+
+  mk.clear();
+  mk.grid();
+
+  if (state.toggles.lightcone) mk.lightCone([0, 0], "#ffd24a", { dash: [4, 4] });
+  if (state.toggles.hyperbolas) {
+    const ks = [];
+    for (let n = 1; n <= Math.floor(tA); n++) ks.push(n);
+    mk.hyperbolas(ks, "rgba(85,238,119,0.25)");
+  }
+
+  // S 系座標軸
+  mk.sAxes({ tickRange: Math.ceil(tA) + 1 });
+
+  // A 世界線（藍粗線，沿 ct 軸）
+  mk.segment(O, R, "#6cf", { lineWidth: 4, cap: "round" });
+
+  // B 世界線（粉紅折線：O → K → R）
+  mk.segment(O, K, "#f6a", { lineWidth: 4, cap: "round" });
+  mk.segment(K, R, "#f6a", { lineWidth: 4, cap: "round" });
+
+  // 同時面（折返跳變）
+  if (state.toggles.simultaneity) {
+    // 折返前 B 在速度 +β 慣性系 → 同時面斜率 β（在 (x, ct) 圖中 slope = β）
+    // 從 K 沿斜率 β 反推到 x=0：ct = γ·thalf − β·(γβ·thalf) = thalf/γ
+    const ctBefore = thalf / g;
+    // 折返後 B 在速度 -β 慣性系 → 斜率 -β
+    const ctAfter = 2 * g * thalf - thalf / g;
+    // 在繪圖範圍內畫淡黃線
+    // 折返前同時面：經 K，斜率 β。從 x=0 到 x=K[0]+1
+    const xR1 = K[0] + 0.6;
+    mk.segment([0, ctBefore], [xR1, ctBefore + beta * xR1], "rgba(255,210,74,0.55)", { lineWidth: 1.5, dash: [4, 4] });
+    // 折返後同時面：經 K，斜率 -β
+    mk.segment([0, ctAfter], [xR1, ctAfter - beta * xR1], "rgba(255,210,74,0.55)", { lineWidth: 1.5, dash: [4, 4] });
+
+    // 跳變段（A 在 ct ∈ [ctBefore, ctAfter]）
+    mk.segment([0, ctBefore], [0, ctAfter], "rgba(255,210,74,0.95)", { lineWidth: 6, cap: "round" });
+    mk.text(0, (ctBefore + ctAfter) / 2, `跳過 ${(ctAfter - ctBefore).toFixed(2)}`, {
+      color: "#ffd24a", font: "11px 'SF Mono', Menlo, monospace", dx: -8, dy: 4, align: "right",
+    });
+
+    // 標兩個邊界
+    mk.event(0, ctBefore, { color: "#ffd24a", radius: 3.5, stroke: null });
+    mk.event(0, ctAfter, { color: "#ffd24a", radius: 3.5, stroke: null });
+  }
+
+  // tick 事件
+  if (state.toggles.ticks) {
+    // A 的 tick：每整數 ct
+    for (let n = 1; n < tA - 0.05; n++) {
+      mk.event(0, n, { color: "#6cf", radius: 3, stroke: null });
+    }
+    // B 出航 tick：proper time τ = 1, 2, ... 至 thalf
+    for (let n = 1; n <= thalf - 0.05; n++) {
+      mk.event(g * beta * n, g * n, { color: "#f6a", radius: 3, stroke: null });
+    }
+    // B 返航 tick：proper time τ' = 1, 2, ... 至 thalf
+    for (let n = 1; n <= thalf - 0.05; n++) {
+      const x = K[0] - g * beta * n;
+      const ct = K[1] + g * n;
+      mk.event(x, ct, { color: "#f6a", radius: 3, stroke: null });
+    }
+  }
+
+  // 主要事件
+  mk.event(O[0], O[1], { color: "#fff", radius: 6, label: "O 分手", labelOffset: [-12, 14] });
+  mk.event(K[0], K[1], { color: "#fff", radius: 6, label: "K 折返", labelOffset: [12, 4] });
+  mk.event(R[0], R[1], { color: "#fff", radius: 6, label: "R 重逢", labelOffset: [10, 0] });
+
+  // 數值總結（畫在 R 旁邊）
+  mk.text(R[0], R[1], `A: τ=${tA.toFixed(2)}`, {
+    color: "#6cf", font: "12px 'SF Mono', Menlo, monospace", dx: -90, dy: 18,
+  });
+  mk.text(R[0], R[1], `B: τ=${tB.toFixed(2)}`, {
+    color: "#f6a", font: "12px 'SF Mono', Menlo, monospace", dx: -90, dy: 34,
+  });
+
+  // 側邊欄更新
+  document.getElementById("lbl-beta").textContent = beta.toFixed(3);
+  document.getElementById("lbl-thalf").textContent = thalf.toFixed(1);
+  document.getElementById("lbl-gamma").textContent = g.toFixed(3);
+  document.getElementById("lbl-tA").textContent = tA.toFixed(3);
+  document.getElementById("lbl-tB").textContent = tB.toFixed(3);
+  document.getElementById("lbl-diff").textContent = (tA - tB).toFixed(3);
+  document.getElementById("lbl-ratio").textContent = (tB / tA).toFixed(3);
+  document.getElementById("lbl-K").textContent = `(${K[0].toFixed(2)}, ${K[1].toFixed(2)})`;
+  document.getElementById("lbl-R").textContent = `(0, ${R[1].toFixed(2)})`;
+  const jump = 2 * thalf * beta * beta * g;
+  document.getElementById("lbl-jump").textContent = jump.toFixed(2);
+  document.getElementById("band-num").textContent = `= ${(tB / tA).toFixed(3)}`;
+}
+
+const animator = new BoostAnimator(mk, render);
+function renderWithBadge() {
+  render();
+  const vb = mk.viewBeta;
+  document.getElementById("badge-vb").textContent = vb.toFixed(3);
+  document.getElementById("badge-frame").textContent =
+    Math.abs(vb) < 1e-3 ? "S 系 (A)" : (Math.abs(vb - state.beta) < 1e-3 ? "B 出航慣性系" : "過渡中");
+}
+animator.render = renderWithBadge;
+
+document.getElementById("beta").addEventListener("input", e => {
+  state.beta = parseFloat(e.target.value);
+  if (animator.atTarget) mk.viewBeta = state.beta;
+  renderWithBadge();
+});
+document.getElementById("thalf").addEventListener("input", e => {
+  state.thalf = parseFloat(e.target.value); renderWithBadge();
+});
+document.querySelectorAll(".chip[data-toggle]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const k = chip.dataset.toggle;
+    state.toggles[k] = !state.toggles[k];
+    chip.classList.toggle("on", state.toggles[k]);
+    renderWithBadge();
+  });
+});
+
+const btn = document.getElementById("btn-boost");
+btn.addEventListener("click", () => {
+  const at = animator.toggle(state.beta);
+  btn.classList.toggle("active", at);
+  btn.querySelector("span:last-child").textContent =
+    at ? "返回 S 系 (A 視角)" : "Boost 到 B 出航慣性系";
+  btn.querySelector(".arrow").textContent = at ? "◀" : "▶";
+});
+
+renderWithBadge();
+</script>
+</body>
+</html>
