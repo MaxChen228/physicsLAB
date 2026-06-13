@@ -71,6 +71,15 @@
             <input id="terms" type="range" min="4" max="80" step="1" value="32" />
           </label>
 
+          <section class="spectrum" aria-label="Coefficient spectrum">
+            <div class="spectrum-head">
+              <span data-latex="C_n"></span>
+              <span>vs.</span>
+              <span data-latex="n"></span>
+            </div>
+            <svg id="coeff-chart" viewBox="0 0 360 128" role="img" aria-label="C_n coefficient bar chart"></svg>
+          </section>
+
           <div class="toggles">
             <label><input id="animate" type="checkbox" checked /> evolve</label>
             <label><input id="phase" type="checkbox" checked /> phase ribbon</label>

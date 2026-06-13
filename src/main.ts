@@ -37,6 +37,7 @@ const presetSelect = requireElement<HTMLSelectElement>("#preset");
 const applyExpressionButton = requireElement<HTMLButtonElement>("#apply-expression");
 const expressionStatus = requireElement<HTMLParagraphElement>("#expression-status");
 const domainFormula = requireElement<HTMLParagraphElement>("#domain-formula");
+const coefficientChart = requireElement<SVGSVGElement>("#coeff-chart");
 const axisXLabel = requireElement<HTMLDivElement>("#axis-x");
 const axisReLabel = requireElement<HTMLDivElement>("#axis-re");
 const axisImLabel = requireElement<HTMLDivElement>("#axis-im");
@@ -298,6 +299,87 @@ function setInitialProjection(projection: InitialStateProjection): void {
 
   const maxInitialAmplitude = normalizedInitialSamples.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
   amplitudeScale = maxInitialAmplitude > 0 ? 0.62 / maxInitialAmplitude : 1;
+  renderCoefficientChart();
+}
+
+function makeSvgElement<K extends keyof SVGElementTagNameMap>(
+  tagName: K,
+  attributes: Record<string, string>,
+): SVGElementTagNameMap[K] {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+  for (const [key, value] of Object.entries(attributes)) {
+    element.setAttribute(key, value);
+  }
+  return element;
+}
+
+function renderCoefficientChart(): void {
+  const width = 360;
+  const height = 128;
+  const margin = { top: 14, right: 12, bottom: 22, left: 28 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const centerY = margin.top + plotHeight / 2;
+  const visibleCoefficients = coefficients.slice(1, basisTerms + 1);
+  const maxAbs = visibleCoefficients.reduce((max, coefficient) => Math.max(max, Math.abs(coefficient)), 0) || 1;
+  const barGap = basisTerms > 48 ? 1 : 2;
+  const barWidth = Math.max(1, plotWidth / basisTerms - barGap);
+
+  coefficientChart.replaceChildren();
+  coefficientChart.append(
+    makeSvgElement("line", { class: "chart-frame", x1: `${margin.left}`, y1: `${margin.top}`, x2: `${margin.left}`, y2: `${height - margin.bottom}` }),
+    makeSvgElement("line", { class: "chart-axis", x1: `${margin.left}`, y1: `${centerY}`, x2: `${width - margin.right}`, y2: `${centerY}` }),
+    makeSvgElement("line", { class: "chart-grid", x1: `${margin.left}`, y1: `${margin.top}`, x2: `${width - margin.right}`, y2: `${margin.top}` }),
+    makeSvgElement("line", { class: "chart-grid", x1: `${margin.left}`, y1: `${height - margin.bottom}`, x2: `${width - margin.right}`, y2: `${height - margin.bottom}` }),
+  );
+
+  visibleCoefficients.forEach((coefficient, index) => {
+    const n = index + 1;
+    const x = margin.left + index * (plotWidth / basisTerms) + barGap / 2;
+    const magnitude = Math.abs(coefficient) / maxAbs;
+    const barHeight = Math.max(1, magnitude * (plotHeight / 2 - 4));
+    const y = coefficient >= 0 ? centerY - barHeight : centerY;
+    const bar = makeSvgElement("rect", {
+      class: `chart-bar${coefficient < 0 ? " negative" : ""}`,
+      x: x.toFixed(2),
+      y: y.toFixed(2),
+      width: barWidth.toFixed(2),
+      height: barHeight.toFixed(2),
+      rx: "0",
+    });
+
+    const title = makeSvgElement("title", {});
+    title.textContent = `n=${n}, C_n=${coefficient.toFixed(5)}`;
+    bar.append(title);
+    coefficientChart.append(bar);
+  });
+
+  for (const tick of [1, Math.max(1, Math.round(basisTerms / 2)), basisTerms]) {
+    const x = margin.left + (tick - 0.5) * (plotWidth / basisTerms);
+    coefficientChart.append(
+      makeSvgElement("line", {
+        class: "chart-axis",
+        x1: `${x}`,
+        y1: `${centerY - 3}`,
+        x2: `${x}`,
+        y2: `${centerY + 3}`,
+      }),
+      makeSvgElement("text", {
+        class: "chart-label",
+        x: `${x}`,
+        y: `${height - 6}`,
+        "text-anchor": "middle",
+      }),
+    );
+    coefficientChart.lastElementChild!.textContent = `${tick}`;
+  }
+
+  coefficientChart.append(
+    makeSvgElement("text", { class: "chart-label", x: "4", y: `${centerY + 4}` }),
+    makeSvgElement("text", { class: "chart-label", x: `${width - 8}`, y: `${height - 6}`, "text-anchor": "end" }),
+  );
+  coefficientChart.children[coefficientChart.children.length - 2].textContent = "0";
+  coefficientChart.children[coefficientChart.children.length - 1].textContent = "n";
 }
 
 function psi(x: number, time: number, maxTerms: number): { re: number; im: number } {
