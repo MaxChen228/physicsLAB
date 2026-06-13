@@ -113,6 +113,7 @@ const integrationPoints = 1201;
 const xSamples = Array.from({ length: curvePoints }, (_, index) => index / (curvePoints - 1));
 const integrationSamples = Array.from({ length: integrationPoints }, (_, index) => index / (integrationPoints - 1));
 let normalizedInitialSamples = Array<number>(curvePoints).fill(0);
+let amplitudeScale = 1;
 
 const waveLine = new THREE.Line(new THREE.BufferGeometry(), waveMaterial);
 const realProjection = new THREE.Line(new THREE.BufferGeometry(), realMaterial);
@@ -291,6 +292,14 @@ function projectInitialState(latex: string, maxTerms: number): InitialStateProje
   };
 }
 
+function setInitialProjection(projection: InitialStateProjection): void {
+  coefficients = projection.coefficients;
+  normalizedInitialSamples = projection.normalizedSamples;
+
+  const maxInitialAmplitude = normalizedInitialSamples.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
+  amplitudeScale = maxInitialAmplitude > 0 ? 0.62 / maxInitialAmplitude : 1;
+}
+
 function psi(x: number, time: number, maxTerms: number): { re: number; im: number } {
   let re = 0;
   let im = 0;
@@ -340,25 +349,22 @@ function redraw(): void {
   const densityPoints: THREE.Vector3[] = [];
   const initialPoints: THREE.Vector3[] = [];
   let maxDensity = 0;
-  let maxAbsWave = 0;
 
   const values = xSamples.map((x, index) => {
     const value = psi(x, tau, basisTerms);
     const density = value.re * value.re + value.im * value.im;
     maxDensity = Math.max(maxDensity, density);
-    maxAbsWave = Math.max(maxAbsWave, Math.abs(value.re), Math.abs(value.im), Math.abs(normalizedInitialSamples[index] ?? 0));
     return { x, ...value, density };
   });
 
   const densityScale = maxDensity > 0 ? 0.7 / maxDensity : 1;
-  const waveScale = maxAbsWave > 0 ? 0.62 / maxAbsWave : 1;
 
   values.forEach((value, index) => {
-    wavePoints.push(new THREE.Vector3(value.x, value.re * waveScale, value.im * waveScale));
-    realPoints.push(new THREE.Vector3(value.x, value.re * waveScale, 0));
-    imagPoints.push(new THREE.Vector3(value.x, 0, value.im * waveScale));
+    wavePoints.push(new THREE.Vector3(value.x, value.re * amplitudeScale, value.im * amplitudeScale));
+    realPoints.push(new THREE.Vector3(value.x, value.re * amplitudeScale, 0));
+    imagPoints.push(new THREE.Vector3(value.x, 0, value.im * amplitudeScale));
     densityPoints.push(new THREE.Vector3(value.x, value.density * densityScale, 0));
-    initialPoints.push(new THREE.Vector3(value.x, (normalizedInitialSamples[index] ?? 0) * waveScale, 0));
+    initialPoints.push(new THREE.Vector3(value.x, (normalizedInitialSamples[index] ?? 0) * amplitudeScale, 0));
   });
 
   setLineGeometry(waveLine, wavePoints);
@@ -409,8 +415,7 @@ timeInput.addEventListener("input", () => {
 termsInput.addEventListener("input", () => {
   basisTerms = Number(termsInput.value);
   const projection = projectInitialState(getExpressionLatex(), basisTerms);
-  coefficients = projection.coefficients;
-  normalizedInitialSamples = projection.normalizedSamples;
+  setInitialProjection(projection);
   redraw();
 });
 
@@ -438,8 +443,7 @@ function applyInitialExpression(): void {
   try {
     renderExpressionPreview();
     const projection = projectInitialState(getExpressionLatex(), basisTerms);
-    coefficients = projection.coefficients;
-    normalizedInitialSamples = projection.normalizedSamples;
+    setInitialProjection(projection);
     tau = 0;
     timeInput.value = "0";
     redraw();
