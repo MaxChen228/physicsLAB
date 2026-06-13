@@ -6,6 +6,12 @@ import { all, create, type EvalFunction } from "mathjs";
 import katex from "katex";
 
 type DisplayMode = "wave" | "density";
+type InitialStateProjection = {
+  coefficients: number[];
+  normalizedSamples: number[];
+  norm: number;
+  captured: number;
+};
 
 function requireElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -24,6 +30,7 @@ const timeOutput = requireElement<HTMLOutputElement>("#time-output");
 const termsOutput = requireElement<HTMLOutputElement>("#terms-output");
 const animateInput = requireElement<HTMLInputElement>("#animate");
 const phaseInput = requireElement<HTMLInputElement>("#phase");
+const initialWaveInput = requireElement<HTMLInputElement>("#initial-wave");
 const expressionInput = requireElement<HTMLTextAreaElement>("#expression");
 const expressionPreview = requireElement<HTMLDivElement>("#expression-preview");
 const presetSelect = requireElement<HTMLSelectElement>("#preset");
@@ -48,7 +55,7 @@ renderLatex(domainFormula, "0\\le x\\le1,\\quad \\phi_n(x)=\\sqrt{2}\\sin(n\\pi 
 document.querySelectorAll<HTMLElement>("[data-latex]").forEach((element) => {
   renderLatex(element, element.dataset.latex ?? "");
 });
-renderLatex(expressionPreview, `f(x)=${expressionInput.value}`);
+renderExpressionPreview();
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#fbfaf7");
@@ -83,6 +90,12 @@ const realMaterial = new THREE.LineBasicMaterial({ color: "#315f9f", linewidth: 
 const imagMaterial = new THREE.LineBasicMaterial({ color: "#a43f38", linewidth: 2 });
 const waveMaterial = new THREE.LineBasicMaterial({ color: "#111111", linewidth: 3 });
 const densityMaterial = new THREE.LineBasicMaterial({ color: "#111111", linewidth: 3 });
+const initialMaterial = new THREE.LineDashedMaterial({
+  color: "#177245",
+  dashSize: 0.035,
+  gapSize: 0.022,
+  linewidth: 2,
+});
 const ribbonMaterial = new THREE.MeshBasicMaterial({
   color: "#111111",
   transparent: true,
@@ -99,16 +112,18 @@ const curvePoints = 260;
 const integrationPoints = 1201;
 const xSamples = Array.from({ length: curvePoints }, (_, index) => index / (curvePoints - 1));
 const integrationSamples = Array.from({ length: integrationPoints }, (_, index) => index / (integrationPoints - 1));
+let normalizedInitialSamples = Array<number>(curvePoints).fill(0);
 
 const waveLine = new THREE.Line(new THREE.BufferGeometry(), waveMaterial);
 const realProjection = new THREE.Line(new THREE.BufferGeometry(), realMaterial);
 const imagProjection = new THREE.Line(new THREE.BufferGeometry(), imagMaterial);
 const densityLine = new THREE.Line(new THREE.BufferGeometry(), densityMaterial);
+const initialLine = new THREE.Line(new THREE.BufferGeometry(), initialMaterial);
 const ribbonMesh = new THREE.Mesh(new THREE.BufferGeometry(), ribbonMaterial);
 const densityFill = new THREE.Mesh(new THREE.BufferGeometry(), ribbonMaterial.clone());
 (densityFill.material as THREE.MeshBasicMaterial).opacity = 0.11;
 
-root.add(waveLine, realProjection, imagProjection, densityLine, ribbonMesh, densityFill);
+root.add(waveLine, realProjection, imagProjection, densityLine, initialLine, ribbonMesh, densityFill);
 
 function makeLine(points: THREE.Vector3[], material: THREE.LineBasicMaterial): THREE.Line {
   return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
@@ -144,7 +159,7 @@ function setExpressionLatex(latex: string): void {
 }
 
 function renderExpressionPreview(): void {
-  renderLatex(expressionPreview, `f(x)=${expressionInput.value}`);
+  renderLatex(expressionPreview, `\\Psi(x,0)=N\\left[${expressionInput.value}\\right]`);
 }
 
 function replaceLatexCommand(source: string, command: string, arity: 1 | 2, renderer: (...args: string[]) => string): string {
@@ -242,7 +257,7 @@ function trapezoid(values: number[]): number {
   return sum * h;
 }
 
-function projectInitialState(latex: string, maxTerms: number): number[] {
+function projectInitialState(latex: string, maxTerms: number): InitialStateProjection {
   const compiled = compileExpression(latex);
   const rawValues = integrationSamples.map((x) => evaluateInitial(compiled, x));
   const normSquared = trapezoid(rawValues.map((value) => value * value));
@@ -253,6 +268,7 @@ function projectInitialState(latex: string, maxTerms: number): number[] {
 
   const norm = 1 / Math.sqrt(normSquared);
   const normalizedValues = rawValues.map((value) => value * norm);
+  const normalizedSamples = xSamples.map((x) => evaluateInitial(compiled, x) * norm);
   const nextCoefficients = Array<number>(maxTerms + 1).fill(0);
 
   for (let n = 1; n <= maxTerms; n += 1) {
@@ -264,9 +280,15 @@ function projectInitialState(latex: string, maxTerms: number): number[] {
   }
 
   const captured = nextCoefficients.reduce((sum, coefficient) => sum + coefficient * coefficient, 0);
+  renderLatex(expressionPreview, `\\Psi(x,0)=${norm.toFixed(4)}\\left[${latex}\\right]`);
   renderLatex(expressionStatus, `\\int_0^1|\\Psi(x,0)|^2dx=1,\\quad \\sum C_n^2=${captured.toFixed(4)}`);
   expressionStatus.classList.remove("error");
-  return nextCoefficients;
+  return {
+    coefficients: nextCoefficients,
+    normalizedSamples,
+    norm,
+    captured,
+  };
 }
 
 function psi(x: number, time: number, maxTerms: number): { re: number; im: number } {
@@ -316,31 +338,35 @@ function redraw(): void {
   const realPoints: THREE.Vector3[] = [];
   const imagPoints: THREE.Vector3[] = [];
   const densityPoints: THREE.Vector3[] = [];
+  const initialPoints: THREE.Vector3[] = [];
   let maxDensity = 0;
   let maxAbsWave = 0;
 
-  const values = xSamples.map((x) => {
+  const values = xSamples.map((x, index) => {
     const value = psi(x, tau, basisTerms);
     const density = value.re * value.re + value.im * value.im;
     maxDensity = Math.max(maxDensity, density);
-    maxAbsWave = Math.max(maxAbsWave, Math.abs(value.re), Math.abs(value.im));
+    maxAbsWave = Math.max(maxAbsWave, Math.abs(value.re), Math.abs(value.im), Math.abs(normalizedInitialSamples[index] ?? 0));
     return { x, ...value, density };
   });
 
   const densityScale = maxDensity > 0 ? 0.7 / maxDensity : 1;
   const waveScale = maxAbsWave > 0 ? 0.62 / maxAbsWave : 1;
 
-  for (const value of values) {
+  values.forEach((value, index) => {
     wavePoints.push(new THREE.Vector3(value.x, value.re * waveScale, value.im * waveScale));
     realPoints.push(new THREE.Vector3(value.x, value.re * waveScale, 0));
     imagPoints.push(new THREE.Vector3(value.x, 0, value.im * waveScale));
     densityPoints.push(new THREE.Vector3(value.x, value.density * densityScale, 0));
-  }
+    initialPoints.push(new THREE.Vector3(value.x, (normalizedInitialSamples[index] ?? 0) * waveScale, 0));
+  });
 
   setLineGeometry(waveLine, wavePoints);
   setLineGeometry(realProjection, realPoints);
   setLineGeometry(imagProjection, imagPoints);
   setLineGeometry(densityLine, densityPoints);
+  setLineGeometry(initialLine, initialPoints);
+  initialLine.computeLineDistances();
   setRibbonGeometry(ribbonMesh, wavePoints, (point) => new THREE.Vector3(point.x, 0, 0));
   setRibbonGeometry(densityFill, densityPoints, (point) => new THREE.Vector3(point.x, 0, 0));
 
@@ -350,6 +376,7 @@ function redraw(): void {
   ribbonMesh.visible = mode === "wave" && phaseInput.checked;
   densityLine.visible = mode === "density";
   densityFill.visible = mode === "density";
+  initialLine.visible = initialWaveInput.checked;
 
   modeWave.classList.toggle("active", mode === "wave");
   modeDensity.classList.toggle("active", mode === "density");
@@ -381,11 +408,14 @@ timeInput.addEventListener("input", () => {
 
 termsInput.addEventListener("input", () => {
   basisTerms = Number(termsInput.value);
-  coefficients = projectInitialState(getExpressionLatex(), basisTerms);
+  const projection = projectInitialState(getExpressionLatex(), basisTerms);
+  coefficients = projection.coefficients;
+  normalizedInitialSamples = projection.normalizedSamples;
   redraw();
 });
 
 phaseInput.addEventListener("change", redraw);
+initialWaveInput.addEventListener("change", redraw);
 
 presetSelect.addEventListener("change", () => {
   setExpressionLatex(presetSelect.value);
@@ -407,7 +437,9 @@ expressionInput.addEventListener("keydown", (event) => {
 function applyInitialExpression(): void {
   try {
     renderExpressionPreview();
-    coefficients = projectInitialState(getExpressionLatex(), basisTerms);
+    const projection = projectInitialState(getExpressionLatex(), basisTerms);
+    coefficients = projection.coefficients;
+    normalizedInitialSamples = projection.normalizedSamples;
     tau = 0;
     timeInput.value = "0";
     redraw();
