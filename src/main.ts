@@ -71,7 +71,7 @@ function renderLatex(element: HTMLElement, latex: string, displayMode = false): 
   });
 }
 
-renderLatex(domainFormula, "0\\le x\\le1,\\quad \\phi_n(x)=\\sqrt{2}\\sin(n\\pi x)");
+renderLatex(domainFormula, "\\phi_n(x)=\\sqrt{2}\\sin(n\\pi x)");
 document.querySelectorAll<HTMLElement>("[data-latex]").forEach((element) => {
   renderLatex(element, element.dataset.latex ?? "");
 });
@@ -447,7 +447,7 @@ function renderPresetPicker(): void {
 function renderCoefficientChart(): void {
   const width = 360;
   const height = 128;
-  const margin = { top: 14, right: 12, bottom: 22, left: 28 };
+  const margin = { top: 14, right: 30, bottom: 24, left: 28 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
   const centerY = margin.top + plotHeight / 2;
@@ -507,7 +507,7 @@ function renderCoefficientChart(): void {
 
   coefficientChart.append(
     makeSvgElement("text", { class: "chart-label", x: "4", y: `${centerY + 4}` }),
-    makeSvgElement("text", { class: "chart-label", x: `${width - 8}`, y: `${height - 6}`, "text-anchor": "end" }),
+    makeSvgElement("text", { class: "chart-label", x: `${width - 7}`, y: `${height - 6}`, "text-anchor": "end" }),
   );
   coefficientChart.children[coefficientChart.children.length - 2].textContent = "0";
   coefficientChart.children[coefficientChart.children.length - 1].textContent = "n";
@@ -635,15 +635,23 @@ termsInput.addEventListener("input", () => {
 phaseInput.addEventListener("change", redraw);
 initialWaveInput.addEventListener("change", redraw);
 
-presetButton.addEventListener("click", () => {
+presetButton.addEventListener("click", (event) => {
+  event.stopPropagation();
   setPresetMenuOpen(presetMenu.hidden);
 });
 
-document.addEventListener("click", (event) => {
+document.addEventListener("pointerdown", (event) => {
   const target = event.target;
   if (!(target instanceof Node)) return;
   if (!presetButton.contains(target) && !presetMenu.contains(target)) {
     setPresetMenuOpen(false);
+  }
+}, true);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setPresetMenuOpen(false);
+    presetButton.focus();
   }
 });
 
@@ -655,7 +663,12 @@ presetMenu.addEventListener("keydown", (event) => {
 });
 
 applyExpressionButton.addEventListener("click", () => {
+  setPresetMenuOpen(false);
   applyInitialExpression();
+});
+
+document.querySelector(".panel")?.addEventListener("scroll", () => {
+  setPresetMenuOpen(false);
 });
 
 expressionInput.addEventListener("input", renderExpressionPreview);
