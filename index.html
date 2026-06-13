@@ -38,16 +38,13 @@
             <div id="expression-preview" class="latex-preview"></div>
 
             <div class="row">
-              <label class="field compact">
+              <div class="field compact preset-field">
                 <span>examples</span>
-                <select id="preset">
-                  <option value="x(1-x)">parabola</option>
-                  <option value="\sin(\pi x)">ground state</option>
-                  <option value="\sin(2\pi x)">second eigenstate</option>
-                  <option value="e^{-80(x-\frac{1}{2})^2}">center packet</option>
-                  <option value="x(1-x)(1+0.55\sin(6\pi x))">ripples</option>
-                </select>
-              </label>
+                <div class="preset-picker">
+                  <button id="preset-button" class="preset-button" type="button" aria-expanded="false" aria-controls="preset-menu"></button>
+                  <div id="preset-menu" class="preset-menu" hidden></div>
+                </div>
+              </div>
               <button id="apply-expression" class="apply" type="button">apply</button>
             </div>
 

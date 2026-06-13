@@ -12,6 +12,11 @@ type InitialStateProjection = {
   norm: number;
   captured: number;
 };
+type Preset = {
+  id: string;
+  name: string;
+  latex: string;
+};
 
 function requireElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -33,7 +38,8 @@ const phaseInput = requireElement<HTMLInputElement>("#phase");
 const initialWaveInput = requireElement<HTMLInputElement>("#initial-wave");
 const expressionInput = requireElement<HTMLTextAreaElement>("#expression");
 const expressionPreview = requireElement<HTMLDivElement>("#expression-preview");
-const presetSelect = requireElement<HTMLSelectElement>("#preset");
+const presetButton = requireElement<HTMLButtonElement>("#preset-button");
+const presetMenu = requireElement<HTMLDivElement>("#preset-menu");
 const applyExpressionButton = requireElement<HTMLButtonElement>("#apply-expression");
 const expressionStatus = requireElement<HTMLParagraphElement>("#expression-status");
 const domainFormula = requireElement<HTMLParagraphElement>("#domain-formula");
@@ -43,6 +49,19 @@ const axisReLabel = requireElement<HTMLDivElement>("#axis-re");
 const axisImLabel = requireElement<HTMLDivElement>("#axis-im");
 
 const math = create(all, {});
+const presets: Preset[] = [
+  { id: "parabola", name: "parabola", latex: "x(1-x)" },
+  { id: "ground", name: "ground state", latex: "\\sin(\\pi x)" },
+  { id: "second", name: "second eigenstate", latex: "\\sin(2\\pi x)" },
+  { id: "third-mix", name: "1 + 3 mixture", latex: "\\sin(\\pi x)+0.45\\sin(3\\pi x)" },
+  { id: "center-packet", name: "center packet", latex: "e^{-80(x-\\frac{1}{2})^2}" },
+  { id: "left-packet", name: "left packet", latex: "e^{-95(x-\\frac{1}{3})^2}" },
+  { id: "double-packet", name: "double packet", latex: "e^{-120(x-\\frac{1}{3})^2}+e^{-120(x-\\frac{2}{3})^2}" },
+  { id: "antisymmetric", name: "antisymmetric", latex: "(x-\\frac{1}{2})x(1-x)" },
+  { id: "edge-weighted", name: "edge weighted", latex: "\\sqrt{x}(1-x)" },
+  { id: "ripples", name: "ripples", latex: "x(1-x)(1+0.55\\sin(6\\pi x))" },
+];
+let selectedPresetId = presets[0].id;
 
 function renderLatex(element: HTMLElement, latex: string, displayMode = false): void {
   katex.render(latex, element, {
@@ -231,6 +250,7 @@ function latexToMathExpression(latex: string): string {
   expression = expression
     .replace(/(\d|\)|x)\s*(?=\()/g, "$1*")
     .replace(/(\d|\)|x)\s*(?=(?:x|pi|e)\b)/g, "$1*")
+    .replace(/(\d|x|pi|e)\s*(?=(?:sin|cos|tan|sqrt|exp)\b)/g, "$1*")
     .replace(/(pi|e)\s*(?=(?:x|pi|e|\())/g, "$1*")
     .replace(/\)\s*(?=(?:\d|x|pi|e|sin|cos|tan|sqrt|exp)\b|\()/g, ")*");
 
@@ -311,6 +331,117 @@ function makeSvgElement<K extends keyof SVGElementTagNameMap>(
     element.setAttribute(key, value);
   }
   return element;
+}
+
+function buildPresetSparkline(latex: string): SVGSVGElement {
+  const width = 92;
+  const height = 34;
+  const margin = 3;
+  const svg = makeSvgElement("svg", {
+    class: "preset-graph",
+    viewBox: `0 0 ${width} ${height}`,
+    "aria-hidden": "true",
+  });
+
+  try {
+    const compiled = compileExpression(latex);
+    const samples = Array.from({ length: 72 }, (_, index) => {
+      const x = index / 71;
+      return evaluateInitial(compiled, x);
+    });
+    const maxAbs = samples.reduce((max, value) => Math.max(max, Math.abs(value)), 0) || 1;
+    const centerY = height / 2;
+    const amplitude = height / 2 - margin;
+    const points = samples
+      .map((value, index) => {
+        const x = margin + (index / (samples.length - 1)) * (width - margin * 2);
+        const y = centerY - (value / maxAbs) * amplitude;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+      })
+      .join(" ");
+
+    svg.append(
+      makeSvgElement("line", {
+        class: "preset-graph-axis",
+        x1: `${margin}`,
+        y1: `${centerY}`,
+        x2: `${width - margin}`,
+        y2: `${centerY}`,
+      }),
+      makeSvgElement("polyline", {
+        class: "preset-graph-line",
+        points,
+      }),
+    );
+  } catch {
+    svg.append(
+      makeSvgElement("line", {
+        class: "preset-graph-axis",
+        x1: `${margin}`,
+        y1: `${height / 2}`,
+        x2: `${width - margin}`,
+        y2: `${height / 2}`,
+      }),
+    );
+  }
+
+  return svg;
+}
+
+function setPresetMenuOpen(open: boolean): void {
+  presetMenu.hidden = !open;
+  presetButton.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function renderPresetPicker(): void {
+  const selected = presets.find((preset) => preset.id === selectedPresetId) ?? presets[0];
+  presetButton.replaceChildren();
+
+  const currentText = document.createElement("span");
+  currentText.className = "preset-current-text";
+  currentText.textContent = selected.name;
+
+  const currentFormula = document.createElement("span");
+  currentFormula.className = "preset-current-formula";
+  renderLatex(currentFormula, selected.latex);
+
+  const currentGraph = buildPresetSparkline(selected.latex);
+  presetButton.append(currentText, currentFormula, currentGraph);
+
+  presetMenu.replaceChildren();
+  for (const preset of presets) {
+    const option = document.createElement("button");
+    option.className = "preset-option";
+    option.type = "button";
+    option.dataset.presetId = preset.id;
+    option.setAttribute("aria-selected", preset.id === selectedPresetId ? "true" : "false");
+
+    const marker = document.createElement("span");
+    marker.className = "preset-marker";
+    marker.textContent = preset.id === selectedPresetId ? "✓" : "";
+
+    const body = document.createElement("span");
+    body.className = "preset-option-body";
+
+    const name = document.createElement("span");
+    name.className = "preset-option-name";
+    name.textContent = preset.name;
+
+    const formula = document.createElement("span");
+    formula.className = "preset-option-formula";
+    renderLatex(formula, preset.latex);
+
+    body.append(name, formula);
+    option.append(marker, body, buildPresetSparkline(preset.latex));
+    option.addEventListener("click", () => {
+      selectedPresetId = preset.id;
+      setExpressionLatex(preset.latex);
+      renderPresetPicker();
+      setPresetMenuOpen(false);
+      applyInitialExpression();
+    });
+    presetMenu.append(option);
+  }
 }
 
 function renderCoefficientChart(): void {
@@ -504,9 +635,23 @@ termsInput.addEventListener("input", () => {
 phaseInput.addEventListener("change", redraw);
 initialWaveInput.addEventListener("change", redraw);
 
-presetSelect.addEventListener("change", () => {
-  setExpressionLatex(presetSelect.value);
-  applyInitialExpression();
+presetButton.addEventListener("click", () => {
+  setPresetMenuOpen(presetMenu.hidden);
+});
+
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  if (!presetButton.contains(target) && !presetMenu.contains(target)) {
+    setPresetMenuOpen(false);
+  }
+});
+
+presetMenu.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setPresetMenuOpen(false);
+    presetButton.focus();
+  }
 });
 
 applyExpressionButton.addEventListener("click", () => {
@@ -537,6 +682,7 @@ function applyInitialExpression(): void {
 }
 
 addAxes();
+renderPresetPicker();
 applyInitialExpression();
 redraw();
 

@@ -37,7 +37,6 @@ body {
 
 button,
 input,
-select,
 textarea {
   font: inherit;
 }
@@ -180,8 +179,7 @@ h1 .katex {
   font-size: 16px;
 }
 
-textarea,
-select {
+textarea {
   width: 100%;
   border: 1px solid var(--ink);
   border-radius: 0;
@@ -207,11 +205,6 @@ textarea {
   font-size: 18px;
 }
 
-select {
-  height: 38px;
-  padding: 0 8px;
-}
-
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 92px;
@@ -226,6 +219,141 @@ select {
   color: var(--paper);
   cursor: pointer;
   font-size: 18px;
+}
+
+.preset-picker {
+  position: relative;
+}
+
+.preset-button {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) 92px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--ink);
+  background: rgba(251, 250, 247, 0.82);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.preset-button::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 14px;
+  width: 7px;
+  height: 7px;
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  transform: rotate(45deg);
+}
+
+.preset-button[aria-expanded="true"]::after {
+  top: 18px;
+  transform: rotate(225deg);
+}
+
+.preset-current-text {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-current-formula {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.preset-menu {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: 372px;
+  overflow-y: auto;
+  border: 1px solid var(--ink);
+  background: rgba(251, 250, 247, 0.98);
+  box-shadow: 0 18px 36px rgba(17, 17, 17, 0.14);
+}
+
+.preset-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 96px;
+  gap: 9px;
+  align-items: center;
+  min-height: 62px;
+  padding: 8px 9px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.preset-option:last-child {
+  border-bottom: 0;
+}
+
+.preset-option:hover,
+.preset-option[aria-selected="true"] {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.preset-marker {
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.preset-option-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.preset-option-name {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-option-formula {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.preset-graph {
+  width: 92px;
+  height: 34px;
+}
+
+.preset-graph-axis {
+  stroke: color-mix(in srgb, var(--ink) 14%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.preset-graph-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
 }
 
 .status {
