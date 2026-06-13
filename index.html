@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Infinite Square Well Wave Function</title>
+  </head>
+  <body>
+    <main id="app">
+      <section class="surface" aria-label="Infinite square well wave function demo">
+        <div class="viewport">
+          <canvas id="scene" aria-label="3D wave function scene"></canvas>
+          <div id="axis-x" class="axis-label" data-latex="x"></div>
+          <div id="axis-re" class="axis-label" data-latex="\operatorname{Re}\Psi"></div>
+          <div id="axis-im" class="axis-label" data-latex="\operatorname{Im}\Psi"></div>
+        </div>
+
+        <aside class="panel">
+          <div class="title-block">
+            <p class="kicker">Infinite square well</p>
+            <h1 id="title-formula" data-latex="\Psi(x,t)"></h1>
+            <p id="domain-formula" class="formula"></p>
+          </div>
+
+          <div class="expression">
+            <label class="field">
+              <span>initial <span data-latex="f(x)"></span></span>
+              <textarea id="expression" spellcheck="false">x(1-x)</textarea>
+            </label>
+            <div id="expression-preview" class="latex-preview"></div>
+
+            <div class="row">
+              <label class="field compact">
+                <span>examples</span>
+                <select id="preset">
+                  <option value="x(1-x)">parabola</option>
+                  <option value="\sin(\pi x)">ground state</option>
+                  <option value="\sin(2\pi x)">second eigenstate</option>
+                  <option value="e^{-80(x-\frac{1}{2})^2}">center packet</option>
+                  <option value="x(1-x)(1+0.55\sin(6\pi x))">ripples</option>
+                </select>
+              </label>
+              <button id="apply-expression" class="apply" type="button">apply</button>
+            </div>
+
+            <p id="expression-status" class="status"></p>
+          </div>
+
+          <div class="segmented" role="group" aria-label="Display mode">
+            <button id="mode-wave" class="active" type="button" data-latex="\Psi"></button>
+            <button id="mode-density" type="button" data-latex="|\Psi|^2"></button>
+          </div>
+
+          <label class="control">
+            <span>time <span data-latex="\tau"></span></span>
+            <output id="time-output">0.00</output>
+            <input id="time" type="range" min="0" max="6.283" step="0.001" value="0" />
+          </label>
+
+          <label class="control">
+            <span>basis terms</span>
+            <output id="terms-output">32</output>
+            <input id="terms" type="range" min="4" max="80" step="1" value="32" />
+          </label>
+
+          <div class="toggles">
+            <label><input id="animate" type="checkbox" checked /> evolve</label>
+            <label><input id="phase" type="checkbox" checked /> phase ribbon</label>
+          </div>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

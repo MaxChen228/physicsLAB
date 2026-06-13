@@ -1,0 +1,282 @@
+@import "computer-modern/cmu-serif.css";
+
+:root {
+  color-scheme: light;
+  --ink: #111111;
+  --muted: #565656;
+  --hairline: #d8d8d8;
+  --paper: #fbfaf7;
+  --panel: rgba(251, 250, 247, 0.92);
+  --blue: #315f9f;
+  --red: #a43f38;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background:
+    linear-gradient(var(--hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hairline) 1px, transparent 1px),
+    var(--paper);
+  background-size: 52px 52px;
+  color: var(--ink);
+  font-family: "CMU Serif", "Computer Modern Serif", "Latin Modern Roman", serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.surface {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  width: 100vw;
+  height: 100vh;
+}
+
+.viewport {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+}
+
+#scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.axis-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+  height: 100%;
+  padding: 30px 30px;
+  border-left: 1px solid var(--hairline);
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+}
+
+.kicker,
+.formula,
+.control span,
+.control output,
+.toggles,
+.field span,
+.status {
+  color: var(--muted);
+}
+
+.kicker {
+  margin: 0 0 5px;
+  font-size: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(54px, 5.4vw, 82px);
+  font-weight: 400;
+  line-height: 0.92;
+}
+
+h1 .katex {
+  font-size: 1em;
+}
+
+.formula {
+  margin: 10px 0 0;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.expression {
+  display: grid;
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  font-size: 16px;
+}
+
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: rgba(251, 250, 247, 0.8);
+  color: var(--ink);
+  font-family: "CMU Serif", "Computer Modern Serif", "Latin Modern Roman", serif;
+  font-size: 18px;
+}
+
+textarea {
+  min-height: 72px;
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.latex-preview {
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--hairline);
+  background: rgba(251, 250, 247, 0.58);
+  overflow-x: auto;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+select {
+  height: 38px;
+  padding: 0 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 10px;
+  align-items: end;
+}
+
+.apply {
+  height: 38px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.status {
+  min-height: 20px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.status.error {
+  color: var(--red);
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--ink);
+}
+
+.segmented button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 23px;
+}
+
+.segmented button + button {
+  border-left: 1px solid var(--ink);
+}
+
+.segmented button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  align-items: center;
+}
+
+.control span,
+.control output {
+  font-size: 18px;
+}
+
+.control input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--ink);
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 18px;
+}
+
+.toggles label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.toggles input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--ink);
+}
+
+@media (max-width: 820px) {
+  body {
+    overflow: auto;
+  }
+
+  .surface {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(390px, 54vh) auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .panel {
+    justify-content: flex-start;
+    height: auto;
+    padding: 28px 22px 34px;
+    border-top: 1px solid var(--hairline);
+    border-left: 0;
+  }
+
+  h1 {
+    font-size: 62px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
