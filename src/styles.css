@@ -207,13 +207,13 @@ textarea {
 
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 92px;
-  gap: 10px;
-  align-items: end;
+  grid-template-columns: 1fr;
+  gap: 9px;
 }
 
 .apply {
-  height: 38px;
+  width: 100%;
+  height: 42px;
   border: 1px solid var(--ink);
   background: var(--ink);
   color: var(--paper);
@@ -228,12 +228,15 @@ textarea {
 .preset-button {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) 92px;
-  gap: 10px;
+  grid-template-areas:
+    "name graph"
+    "formula graph";
+  grid-template-columns: minmax(0, 1fr) 116px;
+  gap: 4px 14px;
   align-items: center;
   width: 100%;
-  min-height: 48px;
-  padding: 6px 8px;
+  min-height: 62px;
+  padding: 8px 34px 8px 12px;
   border: 1px solid var(--ink);
   background: rgba(251, 250, 247, 0.82);
   color: var(--ink);
@@ -259,6 +262,7 @@ textarea {
 }
 
 .preset-current-text {
+  grid-area: name;
   min-width: 0;
   overflow: hidden;
   color: var(--ink);
@@ -268,10 +272,12 @@ textarea {
 }
 
 .preset-current-formula {
+  grid-area: formula;
   min-width: 0;
   overflow: hidden;
   color: var(--muted);
   font-size: 15px;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
@@ -289,13 +295,17 @@ textarea {
   box-shadow: 0 18px 36px rgba(17, 17, 17, 0.14);
 }
 
+.preset-menu[hidden] {
+  display: none;
+}
+
 .preset-option {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 96px;
-  gap: 9px;
+  grid-template-columns: 18px minmax(0, 1fr) 112px;
+  gap: 11px;
   align-items: center;
-  min-height: 62px;
-  padding: 8px 9px;
+  min-height: 66px;
+  padding: 8px 11px;
   border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
   background: transparent;
@@ -335,12 +345,18 @@ textarea {
   overflow: hidden;
   color: var(--muted);
   font-size: 14px;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
+.preset-button .preset-graph {
+  grid-area: graph;
+}
+
 .preset-graph {
-  width: 92px;
-  height: 34px;
+  width: 112px;
+  height: 36px;
+  overflow: visible;
 }
 
 .preset-graph-axis {

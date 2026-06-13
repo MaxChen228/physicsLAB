@@ -36,6 +36,7 @@ const termsOutput = requireElement<HTMLOutputElement>("#terms-output");
 const animateInput = requireElement<HTMLInputElement>("#animate");
 const phaseInput = requireElement<HTMLInputElement>("#phase");
 const initialWaveInput = requireElement<HTMLInputElement>("#initial-wave");
+const initialWaveLabel = requireElement<HTMLSpanElement>("#initial-wave-label");
 const expressionInput = requireElement<HTMLTextAreaElement>("#expression");
 const expressionPreview = requireElement<HTMLDivElement>("#expression-preview");
 const presetButton = requireElement<HTMLButtonElement>("#preset-button");
@@ -47,6 +48,8 @@ const coefficientChart = requireElement<SVGSVGElement>("#coeff-chart");
 const axisXLabel = requireElement<HTMLDivElement>("#axis-x");
 const axisReLabel = requireElement<HTMLDivElement>("#axis-re");
 const axisImLabel = requireElement<HTMLDivElement>("#axis-im");
+
+animateInput.checked = false;
 
 const math = create(all, {});
 const presets: Preset[] = [
@@ -134,6 +137,7 @@ const xSamples = Array.from({ length: curvePoints }, (_, index) => index / (curv
 const integrationSamples = Array.from({ length: integrationPoints }, (_, index) => index / (integrationPoints - 1));
 let normalizedInitialSamples = Array<number>(curvePoints).fill(0);
 let amplitudeScale = 1;
+let densityAmplitudeScale = 1;
 
 const waveLine = new THREE.Line(new THREE.BufferGeometry(), waveMaterial);
 const realProjection = new THREE.Line(new THREE.BufferGeometry(), realMaterial);
@@ -319,6 +323,7 @@ function setInitialProjection(projection: InitialStateProjection): void {
 
   const maxInitialAmplitude = normalizedInitialSamples.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
   amplitudeScale = maxInitialAmplitude > 0 ? 0.62 / maxInitialAmplitude : 1;
+  densityAmplitudeScale = computeDensityAmplitudeScale(basisTerms);
   renderCoefficientChart();
 }
 
@@ -528,6 +533,22 @@ function psi(x: number, time: number, maxTerms: number): { re: number; im: numbe
   return { re, im };
 }
 
+function computeDensityAmplitudeScale(maxTerms: number): number {
+  let reference = normalizedInitialSamples.reduce((max, value) => Math.max(max, value * value), 0);
+  const timeSamples = 48;
+  const displayCeiling = 0.7;
+
+  for (let timeIndex = 0; timeIndex < timeSamples; timeIndex += 1) {
+    const sampleTime = (timeIndex / timeSamples) * Math.PI * 2;
+    for (const x of xSamples) {
+      const value = psi(x, sampleTime, maxTerms);
+      reference = Math.max(reference, value.re * value.re + value.im * value.im);
+    }
+  }
+
+  return reference > 0 ? displayCeiling / reference : 1;
+}
+
 function setLineGeometry(line: THREE.Line, points: THREE.Vector3[]): void {
   line.geometry.dispose();
   line.geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -561,23 +582,25 @@ function redraw(): void {
   const imagPoints: THREE.Vector3[] = [];
   const densityPoints: THREE.Vector3[] = [];
   const initialPoints: THREE.Vector3[] = [];
-  let maxDensity = 0;
 
   const values = xSamples.map((x, index) => {
     const value = psi(x, tau, basisTerms);
     const density = value.re * value.re + value.im * value.im;
-    maxDensity = Math.max(maxDensity, density);
-    return { x, ...value, density };
+    const initial = normalizedInitialSamples[index] ?? 0;
+    const initialDensity = initial * initial;
+    return { x, ...value, density, initial, initialDensity };
   });
 
-  const densityScale = maxDensity > 0 ? 0.7 / maxDensity : 1;
-
-  values.forEach((value, index) => {
+  values.forEach((value) => {
     wavePoints.push(new THREE.Vector3(value.x, value.re * amplitudeScale, value.im * amplitudeScale));
     realPoints.push(new THREE.Vector3(value.x, value.re * amplitudeScale, 0));
     imagPoints.push(new THREE.Vector3(value.x, 0, value.im * amplitudeScale));
-    densityPoints.push(new THREE.Vector3(value.x, value.density * densityScale, 0));
-    initialPoints.push(new THREE.Vector3(value.x, (normalizedInitialSamples[index] ?? 0) * amplitudeScale, 0));
+    densityPoints.push(new THREE.Vector3(value.x, value.density * densityAmplitudeScale, 0));
+    initialPoints.push(
+      mode === "density"
+        ? new THREE.Vector3(value.x, value.initialDensity * densityAmplitudeScale, 0)
+        : new THREE.Vector3(value.x, value.initial * amplitudeScale, 0),
+    );
   });
 
   setLineGeometry(waveLine, wavePoints);
@@ -603,6 +626,10 @@ function redraw(): void {
   termsOutput.value = String(basisTerms);
 }
 
+function updateInitialWaveLabel(): void {
+  renderLatex(initialWaveLabel, mode === "density" ? "|\\Psi(x,0)|^2" : "\\Psi(x,0)");
+}
+
 function resize(): void {
   const { clientWidth, clientHeight } = canvas;
   renderer.setSize(clientWidth, clientHeight, false);
@@ -610,30 +637,69 @@ function resize(): void {
   camera.updateProjectionMatrix();
 }
 
+let lastAnimationTime = performance.now();
+let lastAnimatedFrameTime = 0;
+let animationFrameId: number | null = null;
+let sceneDirty = true;
+let renderDirty = true;
+let renderedWidth = 0;
+let renderedHeight = 0;
+const animationFrameInterval = 1000 / 30;
+
+function scheduleRender(): void {
+  if (animationFrameId === null) {
+    animationFrameId = requestAnimationFrame(tick);
+  }
+}
+
+function markSceneDirty(): void {
+  sceneDirty = true;
+  renderDirty = true;
+  scheduleRender();
+}
+
+function resizeIfNeeded(): boolean {
+  const { clientWidth, clientHeight } = canvas;
+  if (clientWidth === renderedWidth && clientHeight === renderedHeight) {
+    return false;
+  }
+
+  renderedWidth = clientWidth;
+  renderedHeight = clientHeight;
+  resize();
+  return true;
+}
+
 modeWave.addEventListener("click", () => {
   mode = "wave";
-  redraw();
+  updateInitialWaveLabel();
+  markSceneDirty();
 });
 
 modeDensity.addEventListener("click", () => {
   mode = "density";
-  redraw();
+  updateInitialWaveLabel();
+  markSceneDirty();
 });
 
 timeInput.addEventListener("input", () => {
   tau = Number(timeInput.value);
-  redraw();
+  markSceneDirty();
 });
 
 termsInput.addEventListener("input", () => {
   basisTerms = Number(termsInput.value);
   const projection = projectInitialState(getExpressionLatex(), basisTerms);
   setInitialProjection(projection);
-  redraw();
+  markSceneDirty();
 });
 
-phaseInput.addEventListener("change", redraw);
-initialWaveInput.addEventListener("change", redraw);
+phaseInput.addEventListener("change", markSceneDirty);
+initialWaveInput.addEventListener("change", markSceneDirty);
+animateInput.addEventListener("change", () => {
+  lastAnimationTime = performance.now();
+  markSceneDirty();
+});
 
 presetButton.addEventListener("click", (event) => {
   event.stopPropagation();
@@ -686,7 +752,7 @@ function applyInitialExpression(): void {
     setInitialProjection(projection);
     tau = 0;
     timeInput.value = "0";
-    redraw();
+    markSceneDirty();
   } catch (error) {
     const message = error instanceof Error ? error.message : "invalid expression";
     expressionStatus.textContent = message;
@@ -719,22 +785,54 @@ function updateAxisLabels(): void {
   }
 }
 
-let last = performance.now();
-function tick(now: number): void {
-  const dt = (now - last) / 1000;
-  last = now;
+controls.addEventListener("change", () => {
+  renderDirty = true;
+  scheduleRender();
+});
 
-  if (animateInput.checked) {
+window.addEventListener("resize", markSceneDirty);
+document.addEventListener("visibilitychange", () => {
+  lastAnimationTime = performance.now();
+  if (!document.hidden) {
+    markSceneDirty();
+  }
+});
+
+function tick(now: number): void {
+  animationFrameId = null;
+  const shouldAnimate = animateInput.checked && !document.hidden;
+
+  if (shouldAnimate && now - lastAnimatedFrameTime >= animationFrameInterval) {
+    const dt = Math.min((now - lastAnimationTime) / 1000, 0.08);
+    lastAnimationTime = now;
+    lastAnimatedFrameTime = now;
     tau = (tau + dt * 0.48) % (Math.PI * 2);
     timeInput.value = tau.toFixed(3);
     redraw();
+    sceneDirty = false;
+    renderDirty = true;
+  } else if (!shouldAnimate) {
+    lastAnimationTime = now;
   }
 
-  resize();
-  controls.update();
-  updateAxisLabels();
-  renderer.render(scene, camera);
-  requestAnimationFrame(tick);
+  if (sceneDirty) {
+    redraw();
+    sceneDirty = false;
+    renderDirty = true;
+  }
+
+  const resized = resizeIfNeeded();
+  const controlsChanged = controls.update();
+
+  if (resized || controlsChanged || renderDirty) {
+    updateAxisLabels();
+    renderer.render(scene, camera);
+    renderDirty = false;
+  }
+
+  if (shouldAnimate || controlsChanged || renderDirty || sceneDirty) {
+    scheduleRender();
+  }
 }
 
-requestAnimationFrame(tick);
+scheduleRender();
