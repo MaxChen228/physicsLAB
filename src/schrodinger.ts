@@ -123,6 +123,8 @@ light.position.set(2, 3, 2);
 scene.add(light);
 
 const axisMaterial = new THREE.LineBasicMaterial({ color: "#111111" });
+const infiniteAxisMaterial = new THREE.LineBasicMaterial({ color: "#111111", transparent: true, opacity: 0.82 });
+const farGridMaterial = new THREE.LineBasicMaterial({ color: "#d7d7d7", transparent: true, opacity: 0.28 });
 const gridMaterial = new THREE.LineBasicMaterial({ color: "#d7d7d7", transparent: true, opacity: 0.65 });
 const waveMaterial = new THREE.LineBasicMaterial({ color: "#111111", linewidth: 3 });
 const realMaterial = new THREE.LineBasicMaterial({ color: "#315f9f", linewidth: 2 });
@@ -158,14 +160,16 @@ function makeLine(points: THREE.Vector3[], material: THREE.LineBasicMaterial): T
 }
 
 function addAxes(): void {
-  root.add(makeLine([new THREE.Vector3(-0.24, 0, 0), new THREE.Vector3(1.24, 0, 0)], axisMaterial));
+  root.add(makeLine([new THREE.Vector3(-16, 0, 0), new THREE.Vector3(17, 0, 0)], infiniteAxisMaterial));
   root.add(makeLine([new THREE.Vector3(0, -0.72, 0), new THREE.Vector3(0, 0.72, 0)], axisMaterial));
   root.add(makeLine([new THREE.Vector3(0, 0, -0.72), new THREE.Vector3(0, 0, 0.72)], axisMaterial));
 
-  for (let i = -3; i <= 15; i += 1) {
+  for (let i = -72; i <= 84; i += 1) {
     const x = i / 12;
-    root.add(makeLine([new THREE.Vector3(x, -0.62, 0), new THREE.Vector3(x, 0.62, 0)], gridMaterial));
-    root.add(makeLine([new THREE.Vector3(x, 0, -0.62), new THREE.Vector3(x, 0, 0.62)], gridMaterial));
+    const material = x < 0 || x > 1 ? farGridMaterial : gridMaterial;
+    const span = x < 0 || x > 1 ? 0.42 : 0.62;
+    root.add(makeLine([new THREE.Vector3(x, -span, 0), new THREE.Vector3(x, span, 0)], material));
+    root.add(makeLine([new THREE.Vector3(x, 0, -span), new THREE.Vector3(x, 0, span)], material));
   }
 }
 
@@ -640,7 +644,7 @@ window.addEventListener("resize", markSceneDirty);
 function updateAxisLabels(): void {
   const bounds = canvas.getBoundingClientRect();
   const labels = [
-    { element: axisXLabel, position: new THREE.Vector3(1.27, 0, 0) },
+    { element: axisXLabel, position: new THREE.Vector3(1.7, 0, 0) },
     { element: axisReLabel, position: new THREE.Vector3(0, 0.76, 0) },
     { element: axisImLabel, position: new THREE.Vector3(0, 0, 0.76) },
   ];
