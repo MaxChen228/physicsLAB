@@ -47,10 +47,11 @@ const axisReLabel = requireElement<HTMLDivElement>("#axis-re");
 const axisImLabel = requireElement<HTMLDivElement>("#axis-im");
 
 const math = create(all, {});
-const gridSize = 256;
+const gridSize = 1024;
 const curveStride = 1;
+const visualHalfSpan = 32;
 const displayCeiling = 0.68;
-const evolutionSteps = 180;
+const evolutionSteps = 96;
 
 const initialPresets: Preset[] = [
   { id: "moving-gaussian", name: "moving Gaussian", latex: "e^{-0.7x^2}e^{4ix}" },
@@ -75,7 +76,7 @@ let potentialPicker: Picker;
 let mode: DisplayMode = "wave";
 let time = 0;
 let mass = 1;
-let domain = 8;
+let domain = 96;
 let dx = (2 * domain) / gridSize;
 let xGrid = Array.from({ length: gridSize }, (_, index) => -domain + index * dx);
 let initialPsi = Array.from({ length: gridSize }, () => ({ re: 0, im: 0 }));
@@ -104,14 +105,14 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-camera.position.set(2.85, 1.25, 2.55);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 160);
+camera.position.set(4.6, 1.3, 3.2);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 0.02, 0);
 controls.minDistance = 2.0;
-controls.maxDistance = 6.4;
+controls.maxDistance = 14;
 controls.maxPolarAngle = Math.PI * 0.76;
 
 const root = new THREE.Group();
@@ -159,18 +160,27 @@ function makeLine(points: THREE.Vector3[], material: THREE.LineBasicMaterial): T
   return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
 }
 
+function makeSegments(points: THREE.Vector3[], material: THREE.LineBasicMaterial): THREE.LineSegments {
+  return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material);
+}
+
 function addAxes(): void {
-  root.add(makeLine([new THREE.Vector3(-16, 0, 0), new THREE.Vector3(17, 0, 0)], infiniteAxisMaterial));
+  root.add(makeLine([new THREE.Vector3(-120, 0, 0), new THREE.Vector3(120, 0, 0)], infiniteAxisMaterial));
   root.add(makeLine([new THREE.Vector3(0, -0.72, 0), new THREE.Vector3(0, 0.72, 0)], axisMaterial));
   root.add(makeLine([new THREE.Vector3(0, 0, -0.72), new THREE.Vector3(0, 0, 0.72)], axisMaterial));
 
-  for (let i = -72; i <= 84; i += 1) {
+  const nearGridPoints: THREE.Vector3[] = [];
+  const farGridPoints: THREE.Vector3[] = [];
+  for (let i = -720; i <= 732; i += 4) {
     const x = i / 12;
-    const material = x < 0 || x > 1 ? farGridMaterial : gridMaterial;
-    const span = x < 0 || x > 1 ? 0.42 : 0.62;
-    root.add(makeLine([new THREE.Vector3(x, -span, 0), new THREE.Vector3(x, span, 0)], material));
-    root.add(makeLine([new THREE.Vector3(x, 0, -span), new THREE.Vector3(x, 0, span)], material));
+    const insideNumericalWindow = x >= 0.5 - visualHalfSpan && x <= 0.5 + visualHalfSpan;
+    const points = insideNumericalWindow ? nearGridPoints : farGridPoints;
+    const span = insideNumericalWindow ? 0.62 : 0.42;
+    points.push(new THREE.Vector3(x, -span, 0), new THREE.Vector3(x, span, 0));
+    points.push(new THREE.Vector3(x, 0, -span), new THREE.Vector3(x, 0, span));
   }
+  root.add(makeSegments(nearGridPoints, gridMaterial));
+  root.add(makeSegments(farGridPoints, farGridMaterial));
 }
 
 function replaceLatexCommand(source: string, command: string, arity: 1 | 2, rendererFn: (...args: string[]) => string): string {
@@ -355,7 +365,7 @@ function evolveTo(targetTime: number): ComplexSample[] {
 }
 
 function xToScene(x: number): number {
-  return (x + domain) / (2 * domain);
+  return 0.5 + (x / domain) * visualHalfSpan;
 }
 
 function setLineGeometry(line: THREE.Line, points: THREE.Vector3[]): void {
@@ -363,14 +373,21 @@ function setLineGeometry(line: THREE.Line, points: THREE.Vector3[]): void {
   line.geometry = new THREE.BufferGeometry().setFromPoints(points);
 }
 
-function setRibbonGeometry(mesh: THREE.Mesh, topPoints: THREE.Vector3[], baseMapper: (point: THREE.Vector3) => THREE.Vector3): void {
+function setRibbonGeometry(
+  mesh: THREE.Mesh,
+  topPoints: THREE.Vector3[],
+  baseMapper: (point: THREE.Vector3) => THREE.Vector3,
+  isActive: (point: THREE.Vector3) => boolean = () => true,
+): void {
   const vertices: number[] = [];
   const indices: number[] = [];
+  const active = topPoints.map(isActive);
   for (const point of topPoints) {
     const base = baseMapper(point);
     vertices.push(base.x, base.y, base.z, point.x, point.y, point.z);
   }
   for (let i = 0; i < topPoints.length - 1; i += 1) {
+    if (!active[i] || !active[i + 1]) continue;
     const base = i * 2;
     indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
   }
@@ -416,8 +433,18 @@ function redraw(): void {
   setLineGeometry(initialLine, initialPoints);
   setLineGeometry(potentialLine, potentialPoints);
   initialLine.computeLineDistances();
-  setRibbonGeometry(ribbonMesh, wavePoints, (point) => new THREE.Vector3(point.x, 0, 0));
-  setRibbonGeometry(densityFill, densityPoints, (point) => new THREE.Vector3(point.x, 0, 0));
+  setRibbonGeometry(
+    ribbonMesh,
+    wavePoints,
+    (point) => new THREE.Vector3(point.x, 0, 0),
+    (point) => Math.hypot(point.y, point.z) > 0.006,
+  );
+  setRibbonGeometry(
+    densityFill,
+    densityPoints,
+    (point) => new THREE.Vector3(point.x, 0, 0),
+    (point) => point.y > 0.006,
+  );
 
   waveLine.visible = mode === "wave";
   realProjection.visible = mode === "wave" && phaseInput.checked;
@@ -644,7 +671,7 @@ window.addEventListener("resize", markSceneDirty);
 function updateAxisLabels(): void {
   const bounds = canvas.getBoundingClientRect();
   const labels = [
-    { element: axisXLabel, position: new THREE.Vector3(1.7, 0, 0) },
+    { element: axisXLabel, position: new THREE.Vector3(7.2, 0, 0) },
     { element: axisReLabel, position: new THREE.Vector3(0, 0.76, 0) },
     { element: axisImLabel, position: new THREE.Vector3(0, 0, 0.76) },
   ];
