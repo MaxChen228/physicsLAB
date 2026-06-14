@@ -157,6 +157,30 @@ h1 .katex {
   color: var(--ink);
 }
 
+.lab-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--ink);
+}
+
+.lab-tabs a {
+  display: grid;
+  min-height: 34px;
+  place-items: center;
+  color: var(--ink);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.lab-tabs a + a {
+  border-left: 1px solid var(--ink);
+}
+
+.lab-tabs a.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .formula {
   margin: 0;
   font-size: 14px;
