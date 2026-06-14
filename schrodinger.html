@@ -35,7 +35,8 @@
             <a class="active" href="./schrodinger.html">potential</a>
           </div>
 
-          <section class="expression">
+          <section class="lab-section expression">
+            <h2>initial state</h2>
             <label class="field">
               <span>initial <span data-latex="\Psi(x,0)"></span></span>
               <textarea id="initial-expression" spellcheck="false">e^{-0.7x^2}e^{4ix}</textarea>
@@ -52,7 +53,8 @@
             </div>
           </section>
 
-          <section class="expression">
+          <section class="lab-section expression">
+            <h2>potential</h2>
             <label class="field">
               <span>potential <span data-latex="V(x)"></span></span>
               <textarea id="potential-expression" spellcheck="false">0</textarea>
@@ -71,35 +73,38 @@
             <p id="status" class="status"></p>
           </section>
 
-          <div class="segmented" role="group" aria-label="Display mode">
-            <button id="mode-wave" class="active" type="button" data-latex="\Psi"></button>
-            <button id="mode-density" type="button" data-latex="|\Psi|^2"></button>
-          </div>
+          <section class="lab-section controls-section">
+            <h2>evolution</h2>
+            <div class="segmented" role="group" aria-label="Display mode">
+              <button id="mode-wave" class="active" type="button" data-latex="\Psi"></button>
+              <button id="mode-density" type="button" data-latex="|\Psi|^2"></button>
+            </div>
 
-          <label class="control">
-            <span>time <span data-latex="t"></span></span>
-            <output id="time-output">0.00</output>
-            <input id="time" type="range" min="0" max="9" step="0.01" value="0" />
-          </label>
+            <label class="control">
+              <span>time <span data-latex="t"></span></span>
+              <output id="time-output">0.00</output>
+              <input id="time" type="range" min="0" max="9" step="0.01" value="0" />
+            </label>
 
-          <label class="control">
-            <span>mass <span data-latex="m"></span></span>
-            <output id="mass-output">1.00</output>
-            <input id="mass" type="range" min="0.35" max="3" step="0.01" value="1" />
-          </label>
+            <label class="control">
+              <span>mass <span data-latex="m"></span></span>
+              <output id="mass-output">1.00</output>
+              <input id="mass" type="range" min="0.35" max="3" step="0.01" value="1" />
+            </label>
 
-          <label class="control">
-            <span>domain <span data-latex="L"></span></span>
-            <output id="domain-output">8.0</output>
-            <input id="domain" type="range" min="4" max="14" step="0.25" value="8" />
-          </label>
+            <label class="control">
+              <span>domain <span data-latex="L"></span></span>
+              <output id="domain-output">8.0</output>
+              <input id="domain" type="range" min="4" max="14" step="0.25" value="8" />
+            </label>
 
-          <div class="toggles">
-            <label><input id="animate" type="checkbox" /> evolve</label>
-            <label><input id="phase" type="checkbox" checked /> phase ribbon</label>
-            <label><input id="initial-wave" type="checkbox" checked /> <span id="initial-wave-label" data-latex="\Psi(x,0)"></span></label>
-            <label><input id="potential-visible" type="checkbox" checked /> <span data-latex="V(x)"></span></label>
-          </div>
+            <div class="toggles">
+              <label><input id="animate" type="checkbox" /> evolve</label>
+              <label><input id="phase" type="checkbox" checked /> phase ribbon</label>
+              <label><input id="initial-wave" type="checkbox" checked /> <span id="initial-wave-label" data-latex="\Psi(x,0)"></span></label>
+              <label><input id="potential-visible" type="checkbox" checked /> <span data-latex="V(x)"></span></label>
+            </div>
+          </section>
         </aside>
       </section>
     </main>

@@ -50,7 +50,6 @@ const math = create(all, {});
 const gridSize = 256;
 const curveStride = 1;
 const displayCeiling = 0.68;
-const potentialFloor = -0.58;
 const evolutionSteps = 180;
 
 const initialPresets: Preset[] = [
@@ -159,11 +158,11 @@ function makeLine(points: THREE.Vector3[], material: THREE.LineBasicMaterial): T
 }
 
 function addAxes(): void {
-  root.add(makeLine([new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.1, 0, 0)], axisMaterial));
+  root.add(makeLine([new THREE.Vector3(-0.24, 0, 0), new THREE.Vector3(1.24, 0, 0)], axisMaterial));
   root.add(makeLine([new THREE.Vector3(0, -0.72, 0), new THREE.Vector3(0, 0.72, 0)], axisMaterial));
   root.add(makeLine([new THREE.Vector3(0, 0, -0.72), new THREE.Vector3(0, 0, 0.72)], axisMaterial));
 
-  for (let i = 0; i <= 12; i += 1) {
+  for (let i = -3; i <= 15; i += 1) {
     const x = i / 12;
     root.add(makeLine([new THREE.Vector3(x, -0.62, 0), new THREE.Vector3(x, 0.62, 0)], gridMaterial));
     root.add(makeLine([new THREE.Vector3(x, 0, -0.62), new THREE.Vector3(x, 0, 0.62)], gridMaterial));
@@ -403,7 +402,7 @@ function redraw(): void {
         ? new THREE.Vector3(x, initialDensity * densityScale, 0)
         : new THREE.Vector3(x, initial.re * waveScale, initial.im * waveScale),
     );
-    potentialPoints.push(new THREE.Vector3(x, potentialFloor + potentialValues[index] * potentialScale, -0.66));
+    potentialPoints.push(new THREE.Vector3(x, potentialValues[index] * potentialScale, 0));
   }
 
   setLineGeometry(waveLine, wavePoints);
@@ -641,7 +640,7 @@ window.addEventListener("resize", markSceneDirty);
 function updateAxisLabels(): void {
   const bounds = canvas.getBoundingClientRect();
   const labels = [
-    { element: axisXLabel, position: new THREE.Vector3(1.13, 0, 0) },
+    { element: axisXLabel, position: new THREE.Vector3(1.27, 0, 0) },
     { element: axisReLabel, position: new THREE.Vector3(0, 0.76, 0) },
     { element: axisImLabel, position: new THREE.Vector3(0, 0, 0.76) },
   ];
